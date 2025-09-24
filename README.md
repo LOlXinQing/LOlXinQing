@@ -1,4 +1,4 @@
--- This is just an example.
+--- This is just an example.
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
@@ -27,7 +27,7 @@ local Localization = WindUI:Localization({
 })
 
 WindUI.TransparencyValue = 0.2
-WindUI:SetTheme("Dark")
+WindUI:SetTheme("黑暗")
 
 local function gradient(text, startColor, endColor)
     local result = ""
@@ -42,12 +42,12 @@ local function gradient(text, startColor, endColor)
 end
 
 WindUI:Popup({
-    Title = gradient("WindUI Demo", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+    Title = gradient("LOlXinQing", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
     Icon = "sparkles",
     Content = "loc:LIB_DESC",
     Buttons = {
         {
-            Title = "Get Started",
+            Title = "点击进入",
             Icon = "arrow-right",
             Variant = "Primary",
             Callback = function() end
@@ -178,7 +178,7 @@ local Window = WindUI:CreateWindow({
 -- OPTIONAL   >:(
 
 
-Window.User:SetAnonymous(true)
+Window.User:SetLOlXinQing(true)
 --Window.User:Disable()
 
 
@@ -254,20 +254,20 @@ local Tabs = {
 }
 
 -- Tabs.Elements:Paragraph({
---     Title = "Interactive Components",
---     Desc = "Explore WindUI's powerful elements",
+--     Title = "可交互组件",
+--     Desc = "LOlXinQing脚本",
 --     Image = "component",
 --     ImageSize = 20,
 --     Color = Color3.fromHex("#30ff6a"),
 -- })
 
 Tabs.Elements:Section({
-    Title = "Interactive Components",
+    Title = "可交互组件",
     TextSize = 20,
 })
 
 Tabs.Elements:Section({
-    Title = "Explore WindUI's powerful elements",
+    Title = "LOlXinQing脚本",
     TextSize = 16,
     TextTransparency = .25,
 })
@@ -275,7 +275,7 @@ Tabs.Elements:Section({
 Tabs.Elements:Divider()
 
 local ElementsSection = Tabs.Elements:Section({
-    Title = "Section Example",
+    Title = "功能类",
     Icon = "bird",
 })
 
