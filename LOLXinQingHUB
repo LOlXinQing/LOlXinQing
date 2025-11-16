@@ -1,0 +1,281 @@
+local ByWho = "作者LOLandxinqing"
+ 
+local ScriptName = "LOLXinQing这是IOS系统" -- 这里填脚本名称(后面要用到标题)
+local Key = "LOLXinQingnb666" -- 你脚本的卡密
+local QQ = "737561425" -- 这里填QQ官群 如果玩家没有卡密就会进入官群索取
+local NoKey = "你从你老祖宗那里知道的卡密是假的加入我们官方群聊737561425获取真实卡密" -- 如果玩家的卡密错误 踢出游戏的提示
+function o() -- 说实话有点想笑
+print("作者LOLandXinQing")
+-- 脚本:-- 直接加載WindUI
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+WindUI:Localization({
+    Enabled = true,
+    Prefix = "loc:",
+    DefaultLanguage = "en",
+    Translations = {
+        ["en"] = {
+            ["WELCOME"] = "歡迎使用LOLXinQingHUB",
+            ["LIB_DESC"] = "測試版",
+        }
+    }
+})
+
+WindUI.TransparencyValue = 0.2
+WindUI:SetTheme("Dark")
+
+local function gradient(text, startColor, endColor)
+    local result = ""
+    for i = 1, #text do
+        local t = (i - 1) / (#text - 1)
+        local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+        local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+        local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+        result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+    end
+    return result
+end
+
+WindUI:Popup({
+    Title = gradient("LOL漢化hub", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+    Icon = "sparkles",
+    Content = "欢迎使用LOLXinQingHUB",
+    Buttons = {
+        {
+            Title = "開始使用",
+            Icon = "arrow-right",
+            Variant = "Primary",
+            Callback = function() end
+        }
+    }
+})
+
+-- 調整窗口大小為移動端友好尺寸
+local Window = WindUI:CreateWindow({
+    Title = "LOLXinQingHUB",
+    Icon = "palette",
+    Author = "欢迎使用LOLXinQingHUB",
+    Folder = "WindUI_Example",
+    Size = UDim2.fromOffset(600, 700), -- 調整為更適合移動端的尺寸
+    Theme = "Dark",
+    User = {
+        Enabled = true,
+        Anonymous = true,
+        Callback = function()
+            WindUI:Notify({
+                Title = "用戶資料",
+                Content = "用戶資料點擊！",
+                Duration = 3
+            })
+        end
+    },
+    SideBarWidth = 180, -- 稍微減小側邊欄寬度以適應移動端
+    ScrollBarEnabled = true
+})
+
+Window:Tag({
+    Title = "0.0.1",
+    Color = Color3.fromHex("#30ff6a")
+})
+Window:Tag({
+    Title = "BETA",
+})
+
+Window:CreateTopbarButton("theme-switcher", "moon", function()
+    WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+    WindUI:Notify({
+        Title = "主題已更改",
+        Content = "當前主題: "..WindUI:GetCurrentTheme(),
+        Duration = 2
+    })
+end, 990)
+
+-- 創建腳本標籤頁
+local ScriptsSection = Window:Section({ Title = "腳本", Opened = true })
+local ScriptsTab = ScriptsSection:Tab({ Title = "腳本", Icon = "code" })
+
+-- 添加Fartsaken按鈕
+ScriptsTab:Button({
+    Title = "Fartsaken被遺棄",
+    Icon = "play",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Fartsaken-LOL-QQ737561425"))()
+    end
+})
+
+-- 添加BronxWare 99 Nights漢化按鈕
+ScriptsTab:Button({
+    Title = "BronxWare 99 Nights漢化",
+    Icon = "play",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/BronxWare99Nights-LOL"))()
+    end
+})
+
+-- 添加Doors XA Hub按鈕
+ScriptsTab:Button({
+    Title = "Doors XA Hub",
+    Icon = "play",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/DoorsXAHubLOL"))()
+    end
+})
+
+-- 添加住宅大屠殺按鈕
+ScriptsTab:Button({
+    Title = "住宅大屠殺",
+    Icon = "play",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/LOLHANHUA"))()
+    end
+})
+
+-- 添加Red Hub(死亡之死LOL漢化)按鈕
+ScriptsTab:Button({
+    Title = "Red Hub(死亡之死LOL漢化)",
+    Icon = "play",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Death%20is%20die"))()
+    end
+})
+
+-- 添加UNDETECTEDWARE犯罪(半漢化)按鈕
+ScriptsTab:Button({
+    Title = "UNDETECTEDWARE犯罪(半漢化)",
+    Icon = "play",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/UNDETECTEDWARE-LOLHAZNHUA"))()
+    end
+})
+
+Window:OnClose(function()
+    print("Window closed")
+end)
+
+Window:OnDestroy(function()
+    print("Window destroyed")
+end)
+
+end
+
+
+
+
+local Info = "看在开源的面子上 给个分享不过分吧"
+
+local ScreenGui = Instance.new("ScreenGui")
+local Frame_1 = Instance.new("Frame")
+local TextLabel_1 = Instance.new("TextLabel")
+local TextBox_1 = Instance.new("TextBox")
+local TextLabel_2 = Instance.new("TextLabel")
+local TextLabel_3 = Instance.new("TextLabel")
+local TextButton_1 = Instance.new("TextButton")
+local TextButton_2 = Instance.new("TextButton")
+local TextButton_3 = Instance.new("TextButton")
+
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+
+Frame_1.Parent = ScreenGui
+Frame_1.BackgroundColor3 = Color3.fromRGB(170,170,255)
+Frame_1.BorderColor3 = Color3.fromRGB(0,0,0)
+Frame_1.BorderSizePixel = 0
+Frame_1.Position = UDim2.new(0.277888447, 0,0.0896414369, 0)
+Frame_1.Size = UDim2.new(0, 553,0, 300)
+
+TextLabel_1.Parent = ScreenGui
+TextLabel_1.BackgroundColor3 = Color3.fromRGB(134,94,255)
+TextLabel_1.BorderColor3 = Color3.fromRGB(0,0,0)
+TextLabel_1.BorderSizePixel = 0
+TextLabel_1.Position = UDim2.new(0.276892424, 0,0.0896414369, 0)
+TextLabel_1.Size = UDim2.new(0, 554,0, 29)
+TextLabel_1.Font = Enum.Font.SourceSans
+TextLabel_1.Text = ScriptName.."的强大卡密系统"
+TextLabel_1.TextColor3 = Color3.fromRGB(215,219,255)
+TextLabel_1.TextSize = 32
+
+TextBox_1.Parent = ScreenGui
+TextBox_1.Active = true
+TextBox_1.BackgroundColor3 = Color3.fromRGB(113,110,156)
+TextBox_1.BorderColor3 = Color3.fromRGB(0,0,0)
+TextBox_1.BorderSizePixel = 0
+TextBox_1.CursorPosition = -1
+TextBox_1.Position = UDim2.new(0.4741036, 0,0.334661365, 0)
+TextBox_1.Size = UDim2.new(0, 158,0, 41)
+TextBox_1.Font = Enum.Font.SourceSans
+TextBox_1.PlaceholderColor3 = Color3.fromRGB(178,178,178)
+TextBox_1.PlaceholderText = ""
+TextBox_1.Text = ""
+TextBox_1.TextSize = 14
+
+TextLabel_2.Parent = ScreenGui
+TextLabel_2.BackgroundColor3 = Color3.fromRGB(170,170,255)
+TextLabel_2.BorderColor3 = Color3.fromRGB(0,0,0)
+TextLabel_2.BorderSizePixel = 0
+TextLabel_2.Position = UDim2.new(0.4741036, 0,0.416334659, 0)
+TextLabel_2.Size = UDim2.new(0, 158,0, 18)
+TextLabel_2.Font = Enum.Font.SourceSans
+TextLabel_2.Text = "737561425"
+TextLabel_2.TextSize = 15
+
+TextLabel_3.Parent = ScreenGui
+TextLabel_3.BackgroundColor3 = Color3.fromRGB(170,170,255)
+TextLabel_3.BorderColor3 = Color3.fromRGB(0,0,0)
+TextLabel_3.BorderSizePixel = 0
+TextLabel_3.Position = UDim2.new(0.417330682, 0,0.213147417, 0)
+TextLabel_3.Size = UDim2.new(0, 273,0, 40)
+TextLabel_3.Font = Enum.Font.SourceSans
+TextLabel_3.Text = "请输入在官方群得来的卡密"
+TextLabel_3.TextColor3 = Color3.fromRGB(130,111,203)
+TextLabel_3.TextScaled = true
+TextLabel_3.TextSize = 25
+TextLabel_3.TextWrapped = true
+
+TextButton_1.Parent = ScreenGui
+TextButton_1.Active = true
+TextButton_1.BackgroundColor3 = Color3.fromRGB(151,151,255)
+TextButton_1.BorderColor3 = Color3.fromRGB(0,0,0)
+TextButton_1.BorderSizePixel = 0
+TextButton_1.Position = UDim2.new(0.375497997, 0,0.539840639, 0)
+TextButton_1.Size = UDim2.new(0, 99,0, 37)
+TextButton_1.Font = Enum.Font.SourceSans
+TextButton_1.Text = "验证卡密"
+TextButton_1.TextSize = 20
+TextButton_1.MouseButton1Click:Connect(function()
+if TextBox_1.Text == Key then
+o() -- bad 
+ScreenGui:Destroy()
+else
+game.Players.LocalPlayer:Kick(NoKey)
+end
+end)
+
+TextButton_2.Parent = ScreenGui
+TextButton_2.Active = true
+TextButton_2.BackgroundColor3 = Color3.fromRGB(151,151,255)
+TextButton_2.BorderColor3 = Color3.fromRGB(0,0,0)
+TextButton_2.BorderSizePixel = 0
+TextButton_2.Position = UDim2.new(0.631474078, 0,0.539840639, 0)
+TextButton_2.Size = UDim2.new(0, 99,0, 37)
+TextButton_2.Font = Enum.Font.SourceSans
+TextButton_2.Text = "退出UI"
+TextButton_2.TextSize = 20
+TextButton_2.MouseButton1Click:Connect(function()
+ScreenGui:Destroy()
+end)
+
+TextButton_3.Parent = ScreenGui
+TextButton_3.Active = true
+TextButton_3.BackgroundColor3 = Color3.fromRGB(151,151,255)
+TextButton_3.BorderColor3 = Color3.fromRGB(0,0,0)
+TextButton_3.BorderSizePixel = 0
+TextButton_3.Position = UDim2.new(0.75, 0,0.159362555, 0)
+TextButton_3.Size = UDim2.new(0, 79,0, 33)
+TextButton_3.Font = Enum.Font.SourceSans
+TextButton_3.Text = "复制脚本官群"
+TextButton_3.TextScaled = true
+TextButton_3.TextSize = 11
+TextButton_3.TextWrapped = true
+TextButton_3.MouseButton1Click:Connect(function()
+setclipboard(QQ)
+end)
