@@ -1,12 +1,4 @@
-local ByWho = "作者LOLandxinqing"
- 
-local ScriptName = "LOLXinQing这是IOS系统" -- 这里填脚本名称(后面要用到标题)
-local Key = "LOLXinQingnb666" -- 你脚本的卡密
-local QQ = "737561425" -- 这里填QQ官群 如果玩家没有卡密就会进入官群索取
-local NoKey = "你从你老祖宗那里知道的卡密是假的加入我们官方群聊737561425获取真实卡密" -- 如果玩家的卡密错误 踢出游戏的提示
-function o() -- 说实话有点想笑
-print("作者LOLandXinQing")
--- 脚本:-- 直接加載WindUI
+-- 直接加載WindUI
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 WindUI:Localization({
