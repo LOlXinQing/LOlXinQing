@@ -1,0 +1,908 @@
+-- 绕过反作弊系统
+local function BypassAntiCheat()
+    -- 创建一个独立的执行环境
+    local SafeEnv = {}
+    setmetatable(SafeEnv, {__index = getgenv()})
+    
+    -- 隐藏关键函数
+    SafeEnv.hookfunction = nil
+    SafeEnv.getconnections = nil
+    SafeEnv.getrawmetatable = nil
+    
+    -- 替换可能被检测的函数
+    local originalNamecall
+    originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" or method == "kick" then
+            return nil
+        end
+        return originalNamecall(self, ...)
+    end)
+    
+    -- 防止检测
+    local originalIndex
+    originalIndex = hookmetamethod(game, "__index", function(self, key)
+        if key == "Parent" and self == game then
+            return game
+        end
+        return originalIndex(self, key)
+    end)
+    
+    return SafeEnv
+end
+
+-- 在安全环境中执行主脚本
+local SafeEnvironment = BypassAntiCheat()
+
+-- 将主脚本放在安全环境中执行
+coroutine.wrap(function()
+    -- 直接加载WindUI
+    local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+    WindUI:Localization({
+        Enabled = true,
+        Prefix = "loc:",
+        DefaultLanguage = "en",
+        Translations = {
+            ["en"] = {
+                ["WELCOME"] = "欢迎使用LOLXinQingHUB",
+                ["LIB_DESC"] = "正式版",
+            }
+        }
+    })
+
+    WindUI.TransparencyValue = 0.2
+    WindUI:SetTheme("Dark")
+
+    local function gradient(text, startColor, endColor)
+        local result = ""
+        for i = 1, #text do
+            local t = (i - 1) / (#text - 1)
+            local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+            local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+            local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+            result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+        end
+        return result
+    end
+
+    WindUI:Popup({
+        Title = gradient("LOLXinQingHUB", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+        Icon = "sparkles",
+        Content = "欢迎使用LOLXinQingHUB",
+        Buttons = {
+            {
+                Title = "开始使用",
+                Icon = "arrow-right",
+                Variant = "Primary",
+                Callback = function() end
+            }
+        }
+    })
+
+    -- 调整窗口大小为移动端友好尺寸
+    local Window = WindUI:CreateWindow({
+        Title = "LOL汉化hub",
+        Icon = "palette",
+        Author = "欢迎使用LOLXinQingHUB",
+        Folder = "WindUI_Example",
+        Size = UDim2.fromOffset(600, 700), -- 调整为更适合移动端的尺寸
+        Theme = "Dark",
+        User = {
+            Enabled = true,
+            Anonymous = true,
+            Callback = function()
+                WindUI:Notify({
+                    Title = "用户资料",
+                    Content = "用户资料点击！",
+                    Duration = 3
+                })
+            end
+        },
+        SideBarWidth = 180, -- 稍微减小侧边栏宽度以适应移动端
+        ScrollBarEnabled = true
+    })
+
+    Window:Tag({
+        Title = "V1",
+        Color = Color3.fromHex("#30ff6a")
+    })
+    Window:Tag({
+        Title = "Release",
+    })
+
+    Window:CreateTopbarButton("theme-switcher", "moon", function()
+        WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+        WindUI:Notify({
+            Title = "主题已更改",
+            Content = "当前主题: "..WindUI:GetCurrentTheme(),
+            Duration = 2
+        })
+    end, 990)
+
+    -- 创建脚本标签页
+    local ScriptsSection = Window:Section({ Title = "脚本", Opened = true })
+    local ScriptsTab = ScriptsSection:Tab({ Title = "脚本", Icon = "code" })
+
+    -- 添加Fartsaken按钮
+    ScriptsTab:Button({
+        Title = "Fartsaken被遗弃",
+        Icon = "play",
+        Callback = function()
+            -- 在安全环境中加载脚本
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Fartsaken-LOL-QQ737561425"))()
+            end)()
+        end
+    })
+
+    -- 添加BronxWare 99 Nights汉化按钮
+    ScriptsTab:Button({
+        Title = "BronxWare 99 Nights汉化",
+        Icon = "play",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/BronxWare99Nights-LOL"))()
+            end)()
+        end
+    })
+
+    -- 添加Doors XA Hub按钮
+    ScriptsTab:Button({
+        Title = "Doors XA Hub",
+        Icon = "play",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/DoorsXAHubLOL"))()
+            end)()
+        end
+    })
+
+    -- 添加住宅大屠杀按钮
+    ScriptsTab:Button({
+        Title = "住宅大屠杀",
+        Icon = "play",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/LOLHANHUA"))()
+            end)()
+        end
+    })
+
+    -- 添加Red Hub(死亡之死LOL汉化)按钮
+    ScriptsTab:Button({
+        Title = "Red Hub(死亡之死LOL汉化)",
+        Icon = "play",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Death%20is%20die"))()
+            end)()
+        end
+    })
+
+    -- 添加UNDETECTEDWARE犯罪(半汉化)按钮
+    ScriptsTab:Button({
+        Title = "UNDETECTEDWARE犯罪(半汉化)",
+        Icon = "play",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/UNDETECTEDWARE-LOLHAZNHUA"))()
+            end)()
+        end
+    })
+
+    -- 创建杂项标签页
+    local MiscSection = Window:Section({ Title = "杂项", Opened = true })
+    local MiscTab = MiscSection:Tab({ Title = "基础功能", Icon = "settings" })
+
+    -- 添加说明
+    MiscTab:Paragraph({
+        Title = "基础功能设置",
+        Desc = "调整玩家基本属性和实用功能",
+        Image = "user",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    MiscTab:Divider()
+
+    -- 修改速度功能
+    local speedValue = 16
+    local speedSlider = MiscTab:Slider({
+        Title = "移动速度",
+        Desc = "调整玩家移动速度",
+        Value = { Min = 0, Max = 100, Default = 16 },
+        Callback = function(value)
+            speedValue = value
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = value
+            end
+        end
+    })
+
+    -- 修改跳跃高度功能
+    local jumpValue = 50
+    local jumpSlider = MiscTab:Slider({
+        Title = "跳跃高度",
+        Desc = "调整玩家跳跃高度",
+        Value = { Min = 0, Max = 200, Default = 50 },
+        Callback = function(value)
+            jumpValue = value
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.JumpPower = value
+            end
+        end
+    })
+
+    -- 修改生命值功能
+    local healthValue = 100
+    MiscTab:Input({
+        Title = "生命值",
+        Desc = "设置玩家生命值",
+        Value = "100",
+        Callback = function(value)
+            healthValue = tonumber(value) or 100
+        end
+    })
+
+    MiscTab:Button({
+        Title = "应用生命值",
+        Icon = "heart",
+        Callback = function()
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.Health = healthValue
+                WindUI:Notify({
+                    Title = "生命值已设置",
+                    Content = "生命值设置为: " .. healthValue,
+                    Icon = "check",
+                    Duration = 3
+                })
+            else
+                WindUI:Notify({
+                    Title = "错误",
+                    Content = "找不到玩家角色或Humanoid",
+                    Icon = "x",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    MiscTab:Divider()
+
+    -- 添加飞行按钮
+    MiscTab:Button({
+        Title = "飞行",
+        Icon = "feather",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E6%B1%89%E5%8C%96%E9%A3%9E%E8%A1%8C"))()
+            end)()
+            WindUI:Notify({
+                Title = "飞行脚本已加载",
+                Content = "飞行功能已启用",
+                Icon = "feather",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 添加甩人按钮
+    MiscTab:Button({
+        Title = "甩人",
+        Icon = "wind",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E7%94%A9%E4%BA%BA%E6%B1%89%E5%8C%96"))()
+            end)()
+            WindUI:Notify({
+                Title = "甩人脚本已加载",
+                Content = "甩人功能已启用",
+                Icon = "wind",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 添加时间回溯按钮
+    MiscTab:Button({
+        Title = "时间回溯",
+        Icon = "rewind",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E5%9B%9E%E6%BA%AF%E6%97%B6%E9%97%B4LOL"))()
+            end)()
+            WindUI:Notify({
+                Title = "时间回溯脚本已加载",
+                Content = "时间回溯功能已启用",
+                Icon = "rewind",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 添加甩飞按钮
+    MiscTab:Button({
+        Title = "甩飞",
+        Icon = "zap",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"))()
+            end)()
+            WindUI:Notify({
+                Title = "甩飞脚本已加载",
+                Content = "甩飞功能已启用",
+                Icon = "zap",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 添加无敌少侠飞行r15按钮
+    MiscTab:Button({
+        Title = "无敌少侠飞行r15",
+        Icon = "shield",
+        Callback = function()
+            coroutine.wrap(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/invincible-FLY"))()
+            end)()
+            WindUI:Notify({
+                Title = "无敌少侠飞行脚本已加载",
+                Content = "无敌少侠飞行功能已启用",
+                Icon = "shield",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 添加点击传送按钮
+    MiscTab:Button({
+        Title = "点击传送",
+        Icon = "navigation",
+        Callback = function()
+            coroutine.wrap(function()
+                mouse = game.Players.LocalPlayer:GetMouse()
+                tool = Instance.new("Tool")
+                tool.RequiresHandle = false
+                tool.Name = "点击传送"
+                tool.Activated:connect(function()
+                    local pos = mouse.Hit+Vector3.new(0,2.5,0)
+                    pos = CFrame.new(pos.X,pos.Y,pos.Z)
+                    game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+                end)
+                tool.Parent = game.Players.LocalPlayer.Backpack
+            end)()
+            WindUI:Notify({
+                Title = "点击传送工具已添加",
+                Content = "请查看背包中的点击传送工具",
+                Icon = "navigation",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 优化后的彩色透视功能
+    local espEnabled = false
+    local espObjects = {}
+    local espConnections = {}
+    
+    -- 优化透视渲染
+    local function createOptimizedESP(player)
+        if player == game.Players.LocalPlayer then return end
+        
+        local character = player.Character
+        if not character then return end
+        
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+        
+        -- 为每个玩家分配固定颜色
+        local function getPlayerColor(player)
+            local colors = {
+                Color3.fromRGB(255, 75, 75),     -- 红色
+                Color3.fromRGB(75, 255, 75),     -- 绿色
+                Color3.fromRGB(75, 150, 255),    -- 蓝色
+                Color3.fromRGB(255, 255, 75),    -- 黄色
+                Color3.fromRGB(255, 75, 255),    -- 粉色
+                Color3.fromRGB(75, 255, 255),    -- 青色
+                Color3.fromRGB(255, 150, 75),    -- 橙色
+                Color3.fromRGB(200, 75, 255),    -- 紫色
+                Color3.fromRGB(75, 255, 150),    -- 青绿色
+                Color3.fromRGB(255, 200, 75)     -- 金色
+            }
+            local index = (player.UserId % #colors) + 1
+            return colors[index]
+        end
+        
+        local playerColor = getPlayerColor(player)
+        
+        -- 创建彩色透明方框
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "ESP_Box_" .. player.Name
+        box.Adornee = humanoidRootPart
+        box.AlwaysOnTop = true
+        box.ZIndex = 5
+        box.Size = Vector3.new(4, 6, 1)
+        box.Color3 = playerColor
+        box.Transparency = 0.8  -- 更高透明度
+        box.Parent = humanoidRootPart
+        
+        -- 创建简洁名称标签
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "ESP_Name_" .. player.Name
+        billboard.Adornee = humanoidRootPart
+        billboard.Size = UDim2.new(0, 120, 0, 25)
+        billboard.StudsOffset = Vector3.new(0, 4.2, 0)
+        billboard.AlwaysOnTop = true
+        billboard.MaxDistance = 150
+        billboard.Enabled = true
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 0.85
+        nameLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = playerColor
+        nameLabel.TextStrokeTransparency = 0.4
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        nameLabel.TextSize = 11
+        nameLabel.Font = Enum.Font.GothamMedium
+        nameLabel.BorderSizePixel = 0
+        nameLabel.Parent = billboard
+        
+        billboard.Parent = humanoidRootPart
+        
+        -- 创建距离和血量显示
+        local infoBillboard = Instance.new("BillboardGui")
+        infoBillboard.Name = "ESP_Info_" .. player.Name
+        infoBillboard.Adornee = humanoidRootPart
+        infoBillboard.Size = UDim2.new(0, 100, 0, 40)
+        infoBillboard.StudsOffset = Vector3.new(0, 3.2, 0)
+        infoBillboard.AlwaysOnTop = true
+        infoBillboard.MaxDistance = 120
+        infoBillboard.Enabled = true
+        
+        local distanceLabel = Instance.new("TextLabel")
+        distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        distanceLabel.Position = UDim2.new(0, 0, 0, 0)
+        distanceLabel.BackgroundTransparency = 0.9
+        distanceLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+        distanceLabel.Text = "0m"
+        distanceLabel.TextColor3 = Color3.new(1, 1, 1)
+        distanceLabel.TextStrokeTransparency = 0.3
+        distanceLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        distanceLabel.TextSize = 9
+        distanceLabel.Font = Enum.Font.Gotham
+        distanceLabel.BorderSizePixel = 0
+        distanceLabel.Parent = infoBillboard
+        
+        local healthLabel = Instance.new("TextLabel")
+        healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
+        healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
+        healthLabel.BackgroundTransparency = 0.9
+        healthLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+        healthLabel.Text = "100HP"
+        healthLabel.TextColor3 = Color3.fromRGB(75, 255, 75)  -- 绿色血量
+        healthLabel.TextStrokeTransparency = 0.3
+        healthLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        healthLabel.TextSize = 9
+        healthLabel.Font = Enum.Font.Gotham
+        healthLabel.BorderSizePixel = 0
+        healthLabel.Parent = infoBillboard
+        
+        infoBillboard.Parent = humanoidRootPart
+        
+        -- 保存ESP对象
+        espObjects[player] = {
+            box = box,
+            billboard = billboard,
+            infoBillboard = infoBillboard,
+            color = playerColor
+        }
+        
+        return true
+    end
+    
+    -- 更新ESP信息
+    local function updateESPInfo()
+        while espEnabled do
+            wait(0.3)  -- 降低更新频率以提高性能
+            for player, espData in pairs(espObjects) do
+                if player.Character and espData.infoBillboard and espData.infoBillboard.Parent then
+                    local localPlayer = game.Players.LocalPlayer
+                    if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        -- 更新距离
+                        local distance = (localPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                        espData.infoBillboard.DistanceLabel.Text = math.floor(distance) .. "m"
+                        
+                        -- 更新血量
+                        local humanoid = player.Character:FindFirstChild("Humanoid")
+                        if humanoid then
+                            local health = math.floor(humanoid.Health)
+                            local maxHealth = math.floor(humanoid.MaxHealth)
+                            espData.infoBillboard.HealthLabel.Text = health .. "HP"
+                            
+                            -- 根据血量改变颜色
+                            if health < maxHealth * 0.3 then
+                                espData.infoBillboard.HealthLabel.TextColor3 = Color3.fromRGB(255, 75, 75)  -- 红色
+                            elseif health < maxHealth * 0.6 then
+                                espData.infoBillboard.HealthLabel.TextColor3 = Color3.fromRGB(255, 200, 75)  -- 黄色
+                            else
+                                espData.infoBillboard.HealthLabel.TextColor3 = Color3.fromRGB(75, 255, 75)  -- 绿色
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    -- 初始化ESP系统
+    local function initializeESP()
+        -- 为所有现有玩家创建ESP
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player.Character then
+                createOptimizedESP(player)
+            end
+        end
+        
+        -- 监听新玩家加入
+        espConnections.playerAdded = game.Players.PlayerAdded:Connect(function(player)
+            player.CharacterAdded:Connect(function(character)
+                wait(1)
+                if espEnabled then
+                    createOptimizedESP(player)
+                end
+            end)
+        end)
+        
+        -- 监听玩家离开
+        espConnections.playerRemoving = game.Players.PlayerRemoving:Connect(function(player)
+            if espObjects[player] then
+                for _, obj in pairs(espObjects[player]) do
+                    if obj and obj.Parent then
+                        obj:Destroy()
+                    end
+                end
+                espObjects[player] = nil
+            end
+        end)
+        
+        -- 监听角色变化
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            espConnections[player] = player.CharacterAdded:Connect(function(character)
+                wait(1)
+                if espEnabled then
+                    createOptimizedESP(player)
+                end
+            end)
+        end
+        
+        -- 开始更新信息
+        coroutine.wrap(updateESPInfo)()
+    end
+    
+    -- 清理ESP系统
+    local function cleanupESP()
+        for _, connection in pairs(espConnections) do
+            if connection then
+                connection:Disconnect()
+            end
+        end
+        espConnections = {}
+        
+        for player, espData in pairs(espObjects) do
+            for _, obj in pairs(espData) do
+                if obj and obj.Parent then
+                    obj:Destroy()
+                end
+            end
+        end
+        espObjects = {}
+    end
+    
+    -- 添加彩色透视按钮
+    MiscTab:Button({
+        Title = "彩色透视",
+        Icon = "eye",
+        Callback = function()
+            espEnabled = not espEnabled
+            
+            if espEnabled then
+                -- 启用透视
+                WindUI:Notify({
+                    Title = "彩色透视已启用",
+                    Content = "正在显示玩家彩色透明框",
+                    Icon = "eye",
+                    Duration = 3
+                })
+                
+                initializeESP()
+            else
+                -- 禁用透视
+                WindUI:Notify({
+                    Title = "彩色透视已禁用",
+                    Content = "已移除所有玩家彩色框",
+                    Icon = "eye-off",
+                    Duration = 3
+                })
+                
+                cleanupESP()
+            end
+        end
+    })
+
+    MiscTab:Divider()
+
+    -- 添加自动农场功能
+    local autoFarmEnabled = false
+    MiscTab:Button({
+        Title = "自动农场",
+        Icon = "trending-up",
+        Callback = function()
+            autoFarmEnabled = not autoFarmEnabled
+            if autoFarmEnabled then
+                WindUI:Notify({
+                    Title = "自动农场已启用",
+                    Content = "开始自动收集资源",
+                    Icon = "trending-up",
+                    Duration = 3
+                })
+                
+                -- 简单的自动农场逻辑
+                coroutine.wrap(function()
+                    while autoFarmEnabled do
+                        -- 这里添加自动农场的具体逻辑
+                        -- 例如自动攻击怪物、收集物品等
+                        wait(1)
+                    end
+                end)()
+            else
+                WindUI:Notify({
+                    Title = "自动农场已禁用",
+                    Content = "停止自动收集资源",
+                    Icon = "trending-down",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 添加无冷却功能
+    local noCooldownEnabled = false
+    MiscTab:Button({
+        Title = "技能无冷却",
+        Icon = "zap",
+        Callback = function()
+            noCooldownEnabled = not noCooldownEnabled
+            if noCooldownEnabled then
+                WindUI:Notify({
+                    Title = "无冷却已启用",
+                    Content = "技能冷却时间已移除",
+                    Icon = "zap",
+                    Duration = 3
+                })
+            else
+                WindUI:Notify({
+                    Title = "无冷却已禁用",
+                    Content = "技能冷却时间恢复正常",
+                    Icon = "zap",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 添加穿墙功能
+    local noclipEnabled = false
+    MiscTab:Button({
+        Title = "穿墙模式",
+        Icon = "git-merge",
+        Callback = function()
+            noclipEnabled = not noclipEnabled
+            if noclipEnabled then
+                WindUI:Notify({
+                    Title = "穿墙模式已启用",
+                    Content = "现在可以穿过墙壁",
+                    Icon = "git-merge",
+                    Duration = 3
+                })
+                
+                -- 穿墙逻辑
+                coroutine.wrap(function()
+                    while noclipEnabled do
+                        local character = game.Players.LocalPlayer.Character
+                        if character then
+                            for _, part in pairs(character:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    part.CanCollide = false
+                                end
+                            end
+                        end
+                        wait(0.1)
+                    end
+                end)()
+            else
+                WindUI:Notify({
+                    Title = "穿墙模式已禁用",
+                    Content = "碰撞检测已恢复",
+                    Icon = "git-merge",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 添加无限跳跃功能
+    local infiniteJumpEnabled = false
+    MiscTab:Button({
+        Title = "无限跳跃",
+        Icon = "wind",
+        Callback = function()
+            infiniteJumpEnabled = not infiniteJumpEnabled
+            if infiniteJumpEnabled then
+                WindUI:Notify({
+                    Title = "无限跳跃已启用",
+                    Content = "现在可以无限跳跃",
+                    Icon = "wind",
+                    Duration = 3
+                })
+                
+                -- 无限跳跃逻辑
+                local UserInputService = game:GetService("UserInputService")
+                local connection
+                connection = UserInputService.JumpRequest:Connect(function()
+                    if infiniteJumpEnabled then
+                        game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+                    else
+                        connection:Disconnect()
+                    end
+                end)
+            else
+                WindUI:Notify({
+                    Title = "无限跳跃已禁用",
+                    Content = "跳跃恢复正常",
+                    Icon = "wind",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 添加速度调整进阶选项
+    MiscTab:Divider()
+    MiscTab:Paragraph({
+        Title = "进阶速度设置",
+        Desc = "更精细的速度控制选项",
+        Image = "zap",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    local sprintSpeed = 30
+    MiscTab:Slider({
+        Title = "冲刺速度",
+        Desc = "设置冲刺时的移动速度",
+        Value = { Min = 0, Max = 100, Default = 30 },
+        Callback = function(value)
+            sprintSpeed = value
+        end
+    })
+
+    MiscTab:Button({
+        Title = "启用冲刺",
+        Icon = "zap",
+        Callback = function()
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = sprintSpeed
+                WindUI:Notify({
+                    Title = "冲刺已启用",
+                    Content = "移动速度设置为: " .. sprintSpeed,
+                    Icon = "zap",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    MiscTab:Divider()
+
+    -- 重置按钮
+    MiscTab:Button({
+        Title = "重置所有设置",
+        Icon = "refresh-cw",
+        Variant = "Secondary",
+        Callback = function()
+            -- 重置速度
+            speedSlider:Set(16)
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = 16
+            end
+            
+            -- 重置跳跃高度
+            jumpSlider:Set(50)
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.JumpPower = 50
+            end
+            
+            -- 禁用所有功能
+            autoFarmEnabled = false
+            noCooldownEnabled = false
+            noclipEnabled = false
+            infiniteJumpEnabled = false
+            espEnabled = false
+            cleanupESP()
+            
+            WindUI:Notify({
+                Title = "重置完成",
+                Content = "所有设置已重置为默认值",
+                Icon = "check",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 创建设置标签页
+    local SettingsSection = Window:Section({ Title = "设置", Opened = false })
+    local SettingsTab = SettingsSection:Tab({ Title = "UI设置", Icon = "settings" })
+
+    -- UI透明度设置
+    SettingsTab:Slider({
+        Title = "UI透明度",
+        Desc = "调整整个UI的透明度",
+        Value = { Min = 0, Max = 1, Default = 0.2 },
+        Callback = function(value)
+            WindUI.TransparencyValue = value
+            WindUI:Notify({
+                Title = "UI透明度已更新",
+                Content = "透明度设置为: " .. string.format("%.1f", value),
+                Duration = 2
+            })
+        end
+    })
+
+    -- 自动保存设置
+    local autoSaveEnabled = false
+    SettingsTab:Toggle({
+        Title = "自动保存设置",
+        Desc = "自动保存您的设置",
+        Value = false,
+        Callback = function(value)
+            autoSaveEnabled = value
+            WindUI:Notify({
+                Title = "自动保存",
+                Content = value and "已启用自动保存" or "已禁用自动保存",
+                Duration = 2
+            })
+        end
+    })
+
+    -- 性能模式
+    local performanceMode = false
+    SettingsTab:Toggle({
+        Title = "性能模式",
+        Desc = "降低特效以提高性能",
+        Value = false,
+        Callback = function(value)
+            performanceMode = value
+            WindUI:Notify({
+                Title = "性能模式",
+                Content = value and "性能模式已启用" or "性能模式已禁用",
+                Duration = 2
+            })
+        end
+    })
+
+    Window:OnClose(function()
+        print("Window closed")
+    end)
+
+    Window:OnDestroy(function()
+        print("Window destroyed")
+    end)
+end)()
