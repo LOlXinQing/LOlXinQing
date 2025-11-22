@@ -1,0 +1,787 @@
+-- LOLXinQingHUB - 完整功能版 with 紫色主题和卡密系统
+-- 卡密: LOLXinQing666 (90天有效期)
+
+local function SafeLoad()
+    -- 创建安全执行环境
+    local function CreateSafeEnvironment()
+        local env = {}
+        local mt = {
+            __index = function(t, k)
+                return getgenv()[k]
+            end,
+            __newindex = function(t, k, v)
+                getgenv()[k] = v
+            end
+        }
+        setmetatable(env, mt)
+        return env
+    end
+
+    -- 在安全环境中执行
+    local env = CreateSafeEnvironment()
+    setfenv(1, env)
+
+    -- ===============================
+    -- 卡密系统
+    -- ===============================
+    local KeySystem = {
+        ValidKey = "LOLXinQing666",
+        IsVerified = false,
+        ExpiryDays = 90,
+        ActivationTime = nil
+    }
+
+    -- 创建紫色主题卡密验证界面
+    local function CreateKeySystemUI()
+        local KeyGui = Instance.new("ScreenGui")
+        KeyGui.Name = "LOLXinQingKeySystem"
+        KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        KeyGui.ResetOnSpawn = false
+
+        -- 主背景框架
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Size = UDim2.new(0, 450, 0, 350)
+        MainFrame.Position = UDim2.new(0.5, -225, 0.5, -175)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(15, 10, 25)
+        MainFrame.BackgroundTransparency = 0.1
+        MainFrame.BorderSizePixel = 0
+        
+        -- 紫色主题边框
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(0, 15)
+        UICorner.Parent = MainFrame
+
+        local UIStroke = Instance.new("UIStroke")
+        UIStroke.Color = Color3.fromRGB(147, 51, 234)
+        UIStroke.Thickness = 4
+        UIStroke.Parent = MainFrame
+
+        -- 彩色渐变边框
+        local BorderGradient = Instance.new("UIGradient")
+        BorderGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(147, 51, 234)),    -- 紫色
+            ColorSequenceKeypoint.new(0.2, Color3.fromRGB(192, 132, 252)), -- 浅紫
+            ColorSequenceKeypoint.new(0.4, Color3.fromRGB(139, 92, 246)),  -- 中紫
+            ColorSequenceKeypoint.new(0.6, Color3.fromRGB(124, 58, 237)),  -- 深紫
+            ColorSequenceKeypoint.new(0.8, Color3.fromRGB(168, 85, 247)),  -- 亮紫
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(217, 70, 239))     -- 粉紫
+        })
+        BorderGradient.Rotation = 45
+        BorderGradient.Parent = UIStroke
+
+        -- 背景渐变效果
+        local BackgroundGradient = Instance.new("UIGradient")
+        BackgroundGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 20, 45)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 10, 25))
+        })
+        BackgroundGradient.Rotation = 45
+        BackgroundGradient.Parent = MainFrame
+
+        -- 标题栏
+        local TitleBar = Instance.new("Frame")
+        TitleBar.Size = UDim2.new(1, 0, 0, 70)
+        TitleBar.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+        TitleBar.BackgroundTransparency = 0.2
+        TitleBar.BorderSizePixel = 0
+        TitleBar.Parent = MainFrame
+
+        local TitleCorner = Instance.new("UICorner")
+        TitleCorner.CornerRadius = UDim.new(0, 15)
+        TitleCorner.Parent = TitleBar
+
+        local TitleLabel = Instance.new("TextLabel")
+        TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+        TitleLabel.BackgroundTransparency = 1
+        TitleLabel.Text = "LOLXinQingHUB 认证系统"
+        TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TitleLabel.TextSize = 22
+        TitleLabel.Font = Enum.Font.GothamBold
+        TitleLabel.Parent = TitleBar
+
+        -- 紫色主题装饰
+        local Decoration1 = Instance.new("Frame")
+        Decoration1.Size = UDim2.new(0, 8, 0, 40)
+        Decoration1.Position = UDim2.new(0, 20, 0.5, -20)
+        Decoration1.BackgroundColor3 = Color3.fromRGB(192, 132, 252)
+        Decoration1.BorderSizePixel = 0
+        Decoration1.Parent = TitleBar
+
+        local Decoration2 = Instance.new("Frame")
+        Decoration2.Size = UDim2.new(0, 8, 0, 40)
+        Decoration2.Position = UDim2.new(1, -28, 0.5, -20)
+        Decoration2.BackgroundColor3 = Color3.fromRGB(192, 132, 252)
+        Decoration2.BorderSizePixel = 0
+        Decoration2.Parent = TitleBar
+
+        -- 内容区域
+        local ContentFrame = Instance.new("Frame")
+        ContentFrame.Size = UDim2.new(1, -40, 1, -100)
+        ContentFrame.Position = UDim2.new(0, 20, 0, 90)
+        ContentFrame.BackgroundTransparency = 1
+        ContentFrame.Parent = MainFrame
+
+        -- 欢迎文本
+        local WelcomeLabel = Instance.new("TextLabel")
+        WelcomeLabel.Size = UDim2.new(1, 0, 0, 80)
+        WelcomeLabel.BackgroundTransparency = 1
+        WelcomeLabel.Text = "欢迎使用 LOLXinQingHUB\n请输入卡密进行验证\n有效期: 90天"
+        WelcomeLabel.TextColor3 = Color3.fromRGB(226, 232, 240)
+        WelcomeLabel.TextSize = 16
+        WelcomeLabel.Font = Enum.Font.Gotham
+        WelcomeLabel.TextWrapped = true
+        WelcomeLabel.Parent = ContentFrame
+
+        -- 卡密输入框
+        local KeyInput = Instance.new("TextBox")
+        KeyInput.Size = UDim2.new(1, 0, 0, 50)
+        KeyInput.Position = UDim2.new(0, 0, 0, 90)
+        KeyInput.BackgroundColor3 = Color3.fromRGB(30, 20, 45)
+        KeyInput.BorderSizePixel = 0
+        KeyInput.PlaceholderText = "请输入卡密..."
+        KeyInput.Text = ""
+        KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+        KeyInput.TextSize = 16
+        KeyInput.Font = Enum.Font.Gotham
+        KeyInput.Parent = ContentFrame
+
+        local InputCorner = Instance.new("UICorner")
+        InputCorner.CornerRadius = UDim.new(0, 8)
+        InputCorner.Parent = KeyInput
+
+        local InputStroke = Instance.new("UIStroke")
+        InputStroke.Color = Color3.fromRGB(147, 51, 234)
+        InputStroke.Thickness = 2
+        InputStroke.Parent = KeyInput
+
+        -- 验证按钮
+        local VerifyButton = Instance.new("TextButton")
+        VerifyButton.Size = UDim2.new(1, 0, 0, 50)
+        VerifyButton.Position = UDim2.new(0, 0, 0, 160)
+        VerifyButton.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+        VerifyButton.BorderSizePixel = 0
+        VerifyButton.Text = "验证卡密"
+        VerifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        VerifyButton.TextSize = 18
+        VerifyButton.Font = Enum.Font.GothamBold
+        VerifyButton.Parent = ContentFrame
+
+        local ButtonCorner = Instance.new("UICorner")
+        ButtonCorner.CornerRadius = UDim.new(0, 8)
+        ButtonCorner.Parent = VerifyButton
+
+        -- 状态显示
+        local StatusLabel = Instance.new("TextLabel")
+        StatusLabel.Size = UDim2.new(1, 0, 0, 40)
+        StatusLabel.Position = UDim2.new(0, 0, 0, 230)
+        StatusLabel.BackgroundTransparency = 1
+        StatusLabel.Text = "状态: 等待验证"
+        StatusLabel.TextColor3 = Color3.fromRGB(148, 163, 184)
+        StatusLabel.TextSize = 14
+        StatusLabel.Font = Enum.Font.Gotham
+        StatusLabel.Parent = ContentFrame
+
+        -- 边框动画
+        local borderTween = game:GetService("TweenService"):Create(
+            BorderGradient,
+            TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+            {Rotation = 405}
+        )
+        borderTween:Play()
+
+        -- 按钮点击效果
+        VerifyButton.MouseEnter:Connect(function()
+            game:GetService("TweenService"):Create(
+                VerifyButton,
+                TweenInfo.new(0.2),
+                {BackgroundColor3 = Color3.fromRGB(168, 85, 247)}
+            ):Play()
+        end)
+
+        VerifyButton.MouseLeave:Connect(function()
+            game:GetService("TweenService"):Create(
+                VerifyButton,
+                TweenInfo.new(0.2),
+                {BackgroundColor3 = Color3.fromRGB(147, 51, 234)}
+            ):Play()
+        end)
+
+        -- 验证功能
+        VerifyButton.MouseButton1Click:Connect(function()
+            local key = KeyInput.Text:gsub("%s+", ""):upper()
+            
+            if key == "" then
+                StatusLabel.Text = "状态: 请输入卡密"
+                StatusLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
+                return
+            end
+
+            -- 验证卡密
+            if key == KeySystem.ValidKey then
+                KeySystem.IsVerified = true
+                KeySystem.ActivationTime = os.time()
+                
+                StatusLabel.Text = "状态: 验证成功 ✓"
+                StatusLabel.TextColor3 = Color3.fromRGB(34, 197, 94)
+                
+                -- 禁用输入
+                KeyInput.Text = "已验证 - 有效期90天"
+                KeyInput.TextEditable = false
+                VerifyButton.Visible = false
+                
+                -- 3秒后关闭窗口并加载主界面
+                delay(3, function()
+                    KeyGui:Destroy()
+                    LoadMainInterface()
+                end)
+            else
+                StatusLabel.Text = "状态: 卡密无效"
+                StatusLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
+            end
+        end)
+
+        -- 回车键验证
+        KeyInput.FocusLost:Connect(function(enterPressed)
+            if enterPressed then
+                VerifyButton.MouseButton1Click()
+            end
+        end)
+
+        MainFrame.Parent = KeyGui
+        KeyGui.Parent = game:GetService("CoreGui")
+
+        return KeyGui
+    end
+
+    -- 加载主界面
+    local function LoadMainInterface()
+        -- 加载WindUI
+        local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+        -- 初始化UI
+        WindUI:Localization({
+            Enabled = true,
+            Prefix = "loc:",
+            DefaultLanguage = "en",
+            Translations = {
+                ["en"] = {
+                    ["WELCOME"] = "欢迎使用LOLXinQingHUB",
+                    ["LIB_DESC"] = "正式版",
+                }
+            }
+        })
+
+        WindUI.TransparencyValue = 0.2
+        WindUI:SetTheme("Dark")
+
+        -- 创建紫色主题水印
+        local function CreatePurpleWatermark()
+            local Watermark = Instance.new("ScreenGui")
+            Watermark.Name = "LOLXinQingWatermark"
+            Watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            Watermark.ResetOnSpawn = false
+
+            local Frame = Instance.new("Frame")
+            Frame.Size = UDim2.new(0, 200, 0, 40)
+            Frame.Position = UDim2.new(0, 10, 0, 10)
+            Frame.BackgroundColor3 = Color3.fromRGB(15, 10, 25)
+            Frame.BackgroundTransparency = 0.2
+            Frame.BorderSizePixel = 0
+            Frame.Parent = Watermark
+
+            local UICorner = Instance.new("UICorner")
+            UICorner.CornerRadius = UDim.new(0, 8)
+            UICorner.Parent = Frame
+
+            -- 紫色边框
+            local UIStroke = Instance.new("UIStroke")
+            UIStroke.Color = Color3.fromRGB(147, 51, 234)
+            UIStroke.Thickness = 2
+            UIStroke.Parent = Frame
+
+            -- 紫色渐变动画
+            local colorSequence = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(147, 51, 234)),    -- 紫色
+                ColorSequenceKeypoint.new(0.25, Color3.fromRGB(192, 132, 252)), -- 浅紫
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(139, 92, 246)),  -- 中紫
+                ColorSequenceKeypoint.new(0.75, Color3.fromRGB(217, 70, 239)), -- 粉紫
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234))     -- 紫色
+            })
+            
+            local Gradient = Instance.new("UIGradient")
+            Gradient.Color = colorSequence
+            Gradient.Rotation = 45
+            Gradient.Parent = UIStroke
+
+            -- 文字
+            local Label = Instance.new("TextLabel")
+            Label.Size = UDim2.new(1, 0, 1, 0)
+            Label.BackgroundTransparency = 1
+            Label.Text = "LOLXinQingHUB - 90天"
+            Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Label.TextSize = 14
+            Label.Font = Enum.Font.GothamBold
+            Label.TextStrokeTransparency = 0.7
+            Label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            Label.Parent = Frame
+
+            -- 文字渐变
+            local textGradient = Instance.new("UIGradient")
+            textGradient.Color = colorSequence
+            textGradient.Parent = Label
+
+            -- 彩色动画
+            local rainbowTween = game:GetService("TweenService"):Create(
+                Gradient,
+                TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+                {Rotation = 405}
+            )
+            rainbowTween:Play()
+
+            -- 文字彩色动画
+            local textRainbowTween = game:GetService("TweenService"):Create(
+                textGradient,
+                TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+                {Rotation = 360}
+            )
+            textRainbowTween:Play()
+
+            Watermark.Parent = game:GetService("CoreGui")
+
+            -- 添加拖拽功能
+            local dragging = false
+            local dragInput, dragStart, startPos
+
+            Frame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = true
+                    dragStart = input.Position
+                    startPos = Frame.Position
+                    
+                    input.Changed:Connect(function()
+                        if input.UserInputState == Enum.UserInputState.End then
+                            dragging = false
+                        end
+                    end)
+                end
+            end)
+
+            Frame.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    dragInput = input
+                end
+            end)
+
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if input == dragInput and dragging then
+                    local delta = input.Position - dragStart
+                    Frame.Position = UDim2.new(
+                        startPos.X.Scale, 
+                        startPos.X.Offset + delta.X,
+                        startPos.Y.Scale, 
+                        startPos.Y.Offset + delta.Y
+                    )
+                end
+            end)
+
+            return Watermark
+        end
+
+        -- 创建水印
+        local watermark = CreatePurpleWatermark()
+
+        -- 渐变文字函数
+        local function gradient(text, startColor, endColor)
+            local result = ""
+            for i = 1, #text do
+                local t = (i - 1) / (#text - 1)
+                local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+                local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+                local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+                result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+            end
+            return result
+        end
+
+        -- 欢迎弹窗
+        WindUI:Popup({
+            Title = gradient("LOLXinQingHUB - 90天版", Color3.fromHex("#8B5CF6"), Color3.fromHex("#D946EF")),
+            Icon = "sparkles",
+            Content = "欢迎使用LOLXinQingHUB - 完整功能版\n卡密验证成功，有效期90天！",
+            Buttons = {
+                {
+                    Title = "开始使用",
+                    Icon = "arrow-right",
+                    Variant = "Primary",
+                    Callback = function() end
+                }
+            }
+        })
+
+        -- 创建主窗口
+        local Window = WindUI:CreateWindow({
+            Title = "LOLXinQingHUB - 90天版",
+            Icon = "palette",
+            Author = "LOLXinQingHUB",
+            Folder = "LOLXinQingHUB",
+            Size = UDim2.fromOffset(650, 750),
+            Theme = "Dark",
+            User = {
+                Enabled = true,
+                Anonymous = true,
+                Callback = function()
+                    WindUI:Notify({
+                        Title = "欢迎使用",
+                        Content = "LOLXinQingHUB已激活，有效期90天！",
+                        Duration = 3
+                    })
+                end
+            },
+            SideBarWidth = 200,
+            ScrollBarEnabled = true
+        })
+
+        Window:Tag({
+            Title = "90天",
+            Color = Color3.fromHex("#A855F7")
+        })
+        Window:Tag({
+            Title = "V3.0.0",
+            Color = Color3.fromHex("#D946EF")
+        })
+
+        -- 主题切换按钮
+        Window:CreateTopbarButton("theme-switcher", "moon", function()
+            WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+            WindUI:Notify({
+                Title = "主题已切换",
+                Content = "当前主题: "..WindUI:GetCurrentTheme(),
+                Duration = 2
+            })
+        end, 990)
+
+        -- ===============================
+        -- 脚本库功能
+        -- ===============================
+        local ScriptsSection = Window:Section({ Title = "脚本库", Opened = true })
+        local ScriptsTab = ScriptsSection:Tab({ Title = "游戏脚本", Icon = "code" })
+
+        ScriptsTab:Paragraph({
+            Title = "LOLXinQingHUB脚本库",
+            Desc = "精选优质游戏脚本，一键加载使用",
+            Image = "zap",
+            ImageSize = 20,
+            Color = "White",
+        })
+
+        ScriptsTab:Divider()
+
+        -- 所有原始脚本按钮
+        local originalScripts = {
+            {
+                Title = "Fartsaken被遗弃",
+                Icon = "play",
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Fartsaken-LOL-QQ737561425"
+            },
+            {
+                Title = "BronxWare 99 Nights汉化",
+                Icon = "play", 
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/BronxWare99Nights-LOL"
+            },
+            {
+                Title = "Doors XA Hub",
+                Icon = "play",
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/DoorsXAHubLOL"
+            },
+            {
+                Title = "住宅大屠杀",
+                Icon = "play",
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/LOLHANHUA"
+            },
+            {
+                Title = "Red Hub(死亡之死LOL汉化)",
+                Icon = "play",
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Death%20is%20die"
+            },
+            {
+                Title = "UNDETECTEDWARE犯罪(半汉化)",
+                Icon = "play",
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/UNDETECTEDWARE-LOLHAZNHUA"
+            },
+            {
+                Title = "甩飞功能",
+                Icon = "zap",
+                URL = "https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"
+            },
+            {
+                Title = "无敌少侠飞行r15",
+                Icon = "shield",
+                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/invincible-FLY"
+            }
+        }
+
+        -- 创建所有原始脚本按钮
+        for _, scriptInfo in ipairs(originalScripts) do
+            ScriptsTab:Button({
+                Title = scriptInfo.Title,
+                Icon = scriptInfo.Icon,
+                Callback = function()
+                    local success, result = pcall(function()
+                        loadstring(game:HttpGet(scriptInfo.URL))()
+                    end)
+                    
+                    if success then
+                        WindUI:Notify({
+                            Title = "脚本加载成功",
+                            Content = scriptInfo.Title .. " 已加载",
+                            Icon = "check",
+                            Duration = 3
+                        })
+                    else
+                        WindUI:Notify({
+                            Title = "加载失败",
+                            Content = "请检查网络连接或脚本链接",
+                            Icon = "x",
+                            Duration = 3
+                        })
+                        warn("脚本加载错误: " .. tostring(result))
+                    end
+                end
+            })
+        end
+
+        -- ===============================
+        -- LOL核心功能
+        -- ===============================
+        local LOLSection = Window:Section({ Title = "LOL核心功能", Opened = true })
+        local LOLTab = LOLSection:Tab({ Title = "核心功能", Icon = "zap" })
+
+        LOLTab:Paragraph({
+            Title = "LOL核心功能",
+            Desc = "汉化飞行、LOL回溯时间等核心功能",
+            Image = "zap",
+            ImageSize = 20,
+            Color = "White",
+        })
+
+        LOLTab:Divider()
+
+        -- 汉化飞行
+        LOLTab:Button({
+            Title = "汉化飞行",
+            Icon = "feather",
+            Callback = function()
+                local success, result = pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E6%B1%89%E5%8C%96%E9%A3%9E%E8%A1%8C"))()
+                end)
+                
+                if success then
+                    WindUI:Notify({
+                        Title = "汉化飞行已加载",
+                        Content = "飞行功能已激活",
+                        Icon = "check",
+                        Duration = 3
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "加载失败",
+                        Content = "请检查网络连接",
+                        Icon = "x",
+                        Duration = 3
+                    })
+                end
+            end
+        })
+
+        -- LOL回溯时间
+        LOLTab:Button({
+            Title = "LOL回溯时间",
+            Icon = "rewind",
+            Callback = function()
+                local success, result = pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E5%9B%9E%E6%BA%AF%E6%97%B6%E9%97%B4LOL"))()
+                end)
+                
+                if success then
+                    WindUI:Notify({
+                        Title = "LOL回溯时间已加载",
+                        Content = "时间回溯功能已激活",
+                        Icon = "check",
+                        Duration = 3
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "加载失败",
+                        Content = "请检查网络连接",
+                        Icon = "x",
+                        Duration = 3
+                    })
+                end
+            end
+        })
+
+        -- ===============================
+        -- 玩家功能
+        -- ===============================
+        local PlayerSection = Window:Section({ Title = "玩家功能", Opened = true })
+        local PlayerTab = PlayerSection:Tab({ Title = "基础属性", Icon = "user" })
+
+        PlayerTab:Paragraph({
+            Title = "玩家属性调整",
+            Desc = "调整玩家基础属性和能力",
+            Image = "user",
+            ImageSize = 20,
+            Color = "White",
+        })
+
+        PlayerTab:Divider()
+
+        -- 移动速度调整
+        local speedValue = 16
+        PlayerTab:Slider({
+            Title = "移动速度",
+            Desc = "调整玩家移动速度",
+            Value = { Min = 0, Max = 200, Default = 16 },
+            Callback = function(value)
+                speedValue = value
+                local character = game.Players.LocalPlayer.Character
+                if character and character:FindFirstChild("Humanoid") then
+                    character.Humanoid.WalkSpeed = value
+                end
+            end
+        })
+
+        -- 跳跃高度调整
+        local jumpValue = 50
+        PlayerTab:Slider({
+            Title = "跳跃高度",
+            Desc = "调整玩家跳跃高度",
+            Value = { Min = 0, Max = 200, Default = 50 },
+            Callback = function(value)
+                jumpValue = value
+                local character = game.Players.LocalPlayer.Character
+                if character and character:FindFirstChild("Humanoid") then
+                    character.Humanoid.JumpPower = value
+                end
+            end
+        })
+
+        -- 重力调整
+        PlayerTab:Slider({
+            Title = "重力调整",
+            Desc = "调整游戏世界重力",
+            Value = { Min = 0, Max = 500, Default = 196.2 },
+            Callback = function(value)
+                workspace.Gravity = value
+            end
+        })
+
+        -- ===============================
+        -- 工具功能
+        -- ===============================
+        local ToolsTab = PlayerSection:Tab({ Title = "工具功能", Icon = "tool" })
+
+        ToolsTab:Paragraph({
+            Title = "实用工具",
+            Desc = "各种辅助工具和功能",
+            Image = "tool",
+            ImageSize = 20,
+            Color = "White",
+        })
+
+        ToolsTab:Divider()
+
+        -- 反AFK功能
+        local antiAFKEnabled = false
+        ToolsTab:Toggle({
+            Title = "反AFK检测",
+            Desc = "防止被系统踢出游戏",
+            Value = false,
+            Callback = function(value)
+                antiAFKEnabled = value
+                if value then
+                    WindUI:Notify({
+                        Title = "反AFK已启用",
+                        Content = "AFK检测已被绕过",
+                        Icon = "shield",
+                        Duration = 3
+                    })
+                    
+                    local virtualUser = game:GetService("VirtualUser")
+                    game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                        if antiAFKEnabled then
+                            virtualUser:CaptureController()
+                            virtualUser:ClickButton2(Vector2.new())
+                        end
+                    end)
+                else
+                    WindUI:Notify({
+                        Title = "反AFK已禁用",
+                        Content = "AFK检测已恢复",
+                        Icon = "shield",
+                        Duration = 3
+                    })
+                end
+            end
+        })
+
+        ToolsTab:Divider()
+
+        -- 服务器信息
+        ToolsTab:Button({
+            Title = "服务器信息",
+            Icon = "server",
+            Callback = function()
+                local players = game.Players:GetPlayers()
+                local playerCount = #players
+                local maxPlayers = game.Players.MaxPlayers
+                local placeId = game.PlaceId
+                
+                WindUI:Notify({
+                    Title = "服务器信息",
+                    Content = string.format("玩家: %d/%d\n地图ID: %d", playerCount, maxPlayers, placeId),
+                    Icon = "server",
+                    Duration = 5
+                })
+            end
+        })
+
+        -- 复制游戏ID
+        ToolsTab:Button({
+            Title = "复制游戏ID",
+            Icon = "copy",
+            Callback = function()
+                local placeId = tostring(game.PlaceId)
+                setclipboard(placeId)
+                WindUI:Notify({
+                    Title = "游戏ID已复制",
+                    Content = "游戏ID: " .. placeId,
+                    Icon = "copy",
+                    Duration = 3
+                })
+            end
+        })
+
+        -- 初始化完成提示
+        WindUI:Notify({
+            Title = "LOLXinQingHUB 加载完成",
+            Content = "所有功能已就绪，开始使用吧！",
+            Icon = "check",
+            Duration = 5
+        })
+    end
+
+    -- 启动卡密系统
+    CreateKeySystemUI()
+end
+
+-- 安全执行主函数
+local success, err = pcall(SafeLoad)
+if not success then
+    warn("LOLXinQingHUB加载错误: " .. err)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "LOLXinQingHUB 错误",
+        Text = "加载失败: " .. tostring(err),
+        Duration = 5
+    })
+end
