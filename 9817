@@ -1,0 +1,1956 @@
+-- LOLXinQingHUB - 完整功能版 with 高级彩色透视
+-- 取消自写飞行，保留外部飞行脚本
+
+local function SafeLoad()
+    -- 创建安全执行环境
+    local function CreateSafeEnvironment()
+        local env = {}
+        local mt = {
+            __index = function(t, k)
+                return getgenv()[k]
+            end,
+            __newindex = function(t, k, v)
+                getgenv()[k] = v
+            end
+        }
+        setmetatable(env, mt)
+        return env
+    end
+
+    -- 在安全环境中执行
+    local env = CreateSafeEnvironment()
+    setfenv(1, env)
+
+    -- 加载WindUI
+    local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+    -- 初始化UI
+    WindUI:Localization({
+        Enabled = true,
+        Prefix = "loc:",
+        DefaultLanguage = "en",
+        Translations = {
+            ["en"] = {
+                ["WELCOME"] = "欢迎使用LOLXinQingHUB",
+                ["LIB_DESC"] = "正式版",
+            }
+        }
+    })
+
+    WindUI.TransparencyValue = 0.2
+    WindUI:SetTheme("Dark")
+
+    -- 创建彩色水印
+    local function CreateColorfulWatermark()
+        local Watermark = Instance.new("ScreenGui")
+        Watermark.Name = "LOLXinQingWatermark"
+        Watermark.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        Watermark.ResetOnSpawn = false
+
+        local Frame = Instance.new("Frame")
+        Frame.Size = UDim2.new(0, 180, 0, 40)
+        Frame.Position = UDim2.new(0, 10, 0, 10)
+        Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        Frame.BackgroundTransparency = 0.2
+        Frame.BorderSizePixel = 0
+        Frame.Parent = Watermark
+
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(0, 8)
+        UICorner.Parent = Frame
+
+        -- 彩色边框
+        local UIStroke = Instance.new("UIStroke")
+        UIStroke.Color = Color3.fromRGB(255, 0, 0)
+        UIStroke.Thickness = 2
+        UIStroke.Parent = Frame
+
+        -- 彩色渐变动画
+        local colorSequence = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),      -- 红
+            ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 165, 0)), -- 橙
+            ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)), -- 黄
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 0)),    -- 绿
+            ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),   -- 蓝
+            ColorSequenceKeypoint.new(0.83, Color3.fromRGB(75, 0, 130)),  -- 靛
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(238, 130, 238))   -- 紫
+        })
+        
+        local Gradient = Instance.new("UIGradient")
+        Gradient.Color = colorSequence
+        Gradient.Rotation = 45
+        Gradient.Parent = UIStroke
+
+        -- 彩色文字
+        local Label = Instance.new("TextLabel")
+        Label.Size = UDim2.new(1, 0, 1, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = "心情andLOL"
+        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Label.TextSize = 16
+        Label.Font = Enum.Font.GothamBold
+        Label.TextStrokeTransparency = 0.7
+        Label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        Label.Parent = Frame
+
+        -- 彩色文字渐变
+        local textGradient = Instance.new("UIGradient")
+        textGradient.Color = colorSequence
+        textGradient.Parent = Label
+
+        -- 彩色动画
+        local rainbowTween = game:GetService("TweenService"):Create(
+            Gradient,
+            TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+            {Rotation = 405}
+        )
+        rainbowTween:Play()
+
+        -- 文字彩色动画
+        local textRainbowTween = game:GetService("TweenService"):Create(
+            textGradient,
+            TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+            {Rotation = 360}
+        )
+        textRainbowTween:Play()
+
+        Watermark.Parent = game:GetService("CoreGui")
+
+        -- 添加拖拽功能
+        local dragging = false
+        local dragInput, dragStart, startPos
+
+        Frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = Frame.Position
+                
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+
+        Frame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                dragInput = input
+            end
+        end)
+
+        game:GetService("UserInputService").InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                local delta = input.Position - dragStart
+                Frame.Position = UDim2.new(
+                    startPos.X.Scale, 
+                    startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, 
+                    startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+
+        return Watermark
+    end
+
+    -- 创建水印
+    local watermark = CreateColorfulWatermark()
+
+    -- 渐变文字函数
+    local function gradient(text, startColor, endColor)
+        local result = ""
+        for i = 1, #text do
+            local t = (i - 1) / (#text - 1)
+            local r = math.floor((startColor.R + (endColor.R - startColor.R) * t) * 255)
+            local g = math.floor((startColor.G + (endColor.G - startColor.G) * t) * 255)
+            local b = math.floor((startColor.B + (endColor.B - startColor.B) * t) * 255)
+            result = result .. string.format('<font color="rgb(%d,%d,%d)">%s</font>', r, g, b, text:sub(i, i))
+        end
+        return result
+    end
+
+    -- 欢迎弹窗
+    WindUI:Popup({
+        Title = gradient("LOLXinQingHUB", Color3.fromHex("#6A11CB"), Color3.fromHex("#2575FC")),
+        Icon = "sparkles",
+        Content = "欢迎使用LOLXinQingHUB - 完整功能版\n包含所有原始脚本和优化功能",
+        Buttons = {
+            {
+                Title = "开始使用",
+                Icon = "arrow-right",
+                Variant = "Primary",
+                Callback = function() end
+            }
+        }
+    })
+
+    -- 创建主窗口
+    local Window = WindUI:CreateWindow({
+        Title = "LOLXinQingHUB",
+        Icon = "palette",
+        Author = "LOLXinQingHUB",
+        Folder = "LOLXinQingHUB",
+        Size = UDim2.fromOffset(650, 750),
+        Theme = "Dark",
+        User = {
+            Enabled = true,
+            Anonymous = true,
+            Callback = function()
+                WindUI:Notify({
+                    Title = "用户信息",
+                    Content = "欢迎使用LOLXinQingHUB！",
+                    Duration = 3
+                })
+            end
+        },
+        SideBarWidth = 200,
+        ScrollBarEnabled = true
+    })
+
+    Window:Tag({
+        Title = "完整版",
+        Color = Color3.fromHex("#30ff6a")
+    })
+    Window:Tag({
+        Title = "V3.0.0",
+        Color = Color3.fromHex("#ff6b35")
+    })
+
+    -- 主题切换按钮
+    Window:CreateTopbarButton("theme-switcher", "moon", function()
+        WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+        WindUI:Notify({
+            Title = "主题已切换",
+            Content = "当前主题: "..WindUI:GetCurrentTheme(),
+            Duration = 2
+        })
+    end, 990)
+
+    -- ===============================
+    -- 脚本库功能 - 包含所有原始脚本
+    -- ===============================
+    local ScriptsSection = Window:Section({ Title = "脚本库", Opened = true })
+    local ScriptsTab = ScriptsSection:Tab({ Title = "游戏脚本", Icon = "code" })
+
+    ScriptsTab:Paragraph({
+        Title = "LOLXinQingHUB脚本库",
+        Desc = "精选优质游戏脚本，一键加载使用",
+        Image = "zap",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    ScriptsTab:Divider()
+
+    -- 所有原始脚本按钮
+    local originalScripts = {
+        {
+            Title = "Fartsaken被遗弃",
+            Icon = "play",
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Fartsaken-LOL-QQ737561425"
+        },
+        {
+            Title = "BronxWare 99 Nights汉化",
+            Icon = "play", 
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/BronxWare99Nights-LOL"
+        },
+        {
+            Title = "Doors XA Hub",
+            Icon = "play",
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/DoorsXAHubLOL"
+        },
+        {
+            Title = "住宅大屠杀",
+            Icon = "play",
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/LOLHANHUA"
+        },
+        {
+            Title = "Red Hub(死亡之死LOL汉化)",
+            Icon = "play",
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Death%20is%20die"
+        },
+        {
+            Title = "UNDETECTEDWARE犯罪(半汉化)",
+            Icon = "play",
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/UNDETECTEDWARE-LOLHAZNHUA"
+        },
+        {
+            Title = "甩飞功能",
+            Icon = "zap",
+            URL = "https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"
+        },
+        {
+            Title = "无敌少侠飞行r15",
+            Icon = "shield",
+            URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/invincible-FLY"
+        }
+    }
+
+    -- 创建所有原始脚本按钮
+    for _, scriptInfo in ipairs(originalScripts) do
+        ScriptsTab:Button({
+            Title = scriptInfo.Title,
+            Icon = scriptInfo.Icon,
+            Callback = function()
+                local success, result = pcall(function()
+                    loadstring(game:HttpGet(scriptInfo.URL))()
+                end)
+                
+                if success then
+                    WindUI:Notify({
+                        Title = "脚本加载成功",
+                        Content = scriptInfo.Title .. " 已加载",
+                        Icon = "check",
+                        Duration = 3
+                    })
+                else
+                    WindUI:Notify({
+                        Title = "加载失败",
+                        Content = "请检查网络连接或脚本链接",
+                        Icon = "x",
+                        Duration = 3
+                    })
+                    warn("脚本加载错误: " .. tostring(result))
+                end
+            end
+        })
+    end
+
+    -- ===============================
+    -- LOL核心功能
+    -- ===============================
+    local LOLSection = Window:Section({ Title = "LOL核心功能", Opened = true })
+    local LOLTab = LOLSection:Tab({ Title = "核心功能", Icon = "zap" })
+
+    LOLTab:Paragraph({
+        Title = "LOL核心功能",
+        Desc = "汉化飞行、LOL回溯时间等核心功能",
+        Image = "zap",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    LOLTab:Divider()
+
+    -- 汉化飞行
+    LOLTab:Button({
+        Title = "汉化飞行",
+        Icon = "feather",
+        Callback = function()
+            local success, result = pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E6%B1%89%E5%8C%96%E9%A3%9E%E8%A1%8C"))()
+            end)
+            
+            if success then
+                WindUI:Notify({
+                    Title = "汉化飞行已加载",
+                    Content = "飞行功能已激活",
+                    Icon = "check",
+                    Duration = 3
+                })
+            else
+                WindUI:Notify({
+                    Title = "加载失败",
+                    Content = "请检查网络连接",
+                    Icon = "x",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- LOL回溯时间
+    LOLTab:Button({
+        Title = "LOL回溯时间",
+        Icon = "rewind",
+        Callback = function()
+            local success, result = pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E5%9B%9E%E6%BA%AF%E6%97%B6%E9%97%B4LOL"))()
+            end)
+            
+            if success then
+                WindUI:Notify({
+                    Title = "LOL回溯时间已加载",
+                    Content = "时间回溯功能已激活",
+                    Icon = "check",
+                    Duration = 3
+                })
+            else
+                WindUI:Notify({
+                    Title = "加载失败",
+                    Content = "请检查网络连接",
+                    Icon = "x",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- ===============================
+    -- 枪战功能
+    -- ===============================
+    local CombatSection = Window:Section({ Title = "枪战功能", Opened = true })
+    local CombatTab = CombatSection:Tab({ Title = "射击辅助", Icon = "target" })
+
+    CombatTab:Paragraph({
+        Title = "高级射击辅助",
+        Desc = "子弹追踪、自瞄等射击辅助功能",
+        Image = "target",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    CombatTab:Divider()
+
+    -- 自瞄配置
+    local AimConfig = {
+        Enabled = false,
+        TargetPart = "Head", -- 默认瞄准头部
+        Smoothness = 1,
+        FOV = 50,
+        TeamCheck = true,
+        VisibleCheck = true,
+        SilentAim = false,
+        Prediction = 0.1
+    }
+
+    -- 子弹追踪配置
+    local BulletTrackConfig = {
+        Enabled = false,
+        TrackColor = Color3.fromRGB(255, 0, 0),
+        TrackThickness = 2,
+        TrackDuration = 1
+    }
+
+    -- 透视配置
+    local WallhackConfig = {
+        Enabled = false,
+        WallTransparency = 0.5,
+        SeeThroughWalls = true,
+        HighlightTargets = true,
+        HighlightColor = Color3.fromRGB(255, 0, 0)
+    }
+
+    -- 自瞄部位选择
+    CombatTab:Dropdown({
+        Title = "自瞄部位",
+        Desc = "选择瞄准的身体部位",
+        Value = "Head",
+        Options = {"Head", "Torso", "HumanoidRootPart", "UpperTorso", "LowerTorso"},
+        Callback = function(value)
+            AimConfig.TargetPart = value
+            WindUI:Notify({
+                Title = "自瞄部位已设置",
+                Content = "现在瞄准: " .. value,
+                Icon = "target",
+                Duration = 2
+            })
+        end
+    })
+
+    -- 自瞄开关
+    CombatTab:Toggle({
+        Title = "启用自瞄",
+        Desc = "开启/关闭自动瞄准",
+        Value = false,
+        Callback = function(value)
+            AimConfig.Enabled = value
+            if value then
+                WindUI:Notify({
+                    Title = "自瞄已启用",
+                    Content = "正在瞄准: " .. AimConfig.TargetPart,
+                    Icon = "target",
+                    Duration = 3
+                })
+                StartAimbot()
+            else
+                WindUI:Notify({
+                    Title = "自瞄已禁用",
+                    Content = "自动瞄准已关闭",
+                    Icon = "target",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 静默瞄准
+    CombatTab:Toggle({
+        Title = "静默瞄准",
+        Desc = "更隐蔽的瞄准方式",
+        Value = false,
+        Callback = function(value)
+            AimConfig.SilentAim = value
+        end
+    })
+
+    -- 子弹追踪开关
+    CombatTab:Toggle({
+        Title = "子弹追踪",
+        Desc = "显示子弹轨迹",
+        Value = false,
+        Callback = function(value)
+            BulletTrackConfig.Enabled = value
+            if value then
+                WindUI:Notify({
+                    Title = "子弹追踪已启用",
+                    Content = "显示子弹飞行轨迹",
+                    Icon = "crosshair",
+                    Duration = 3
+                })
+            else
+                WindUI:Notify({
+                    Title = "子弹追踪已禁用",
+                    Content = "子弹轨迹已隐藏",
+                    Icon = "crosshair",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 透视开关
+    CombatTab:Toggle({
+        Title = "墙壁透视",
+        Desc = "看穿墙壁和障碍物",
+        Value = false,
+        Callback = function(value)
+            WallhackConfig.Enabled = value
+            if value then
+                WindUI:Notify({
+                    Title = "墙壁透视已启用",
+                    Content = "可以看穿墙壁",
+                    Icon = "eye",
+                    Duration = 3
+                })
+                SetupWallhack()
+            else
+                WindUI:Notify({
+                    Title = "墙壁透视已禁用",
+                    Content = "透视效果已关闭",
+                    Icon = "eye-off",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    CombatTab:Divider()
+
+    -- 自瞄平滑度
+    CombatTab:Slider({
+        Title = "自瞄平滑度",
+        Desc = "调整自瞄的平滑程度",
+        Value = { Min = 1, Max = 10, Default = 1 },
+        Callback = function(value)
+            AimConfig.Smoothness = value
+        end
+    })
+
+    -- 自瞄FOV
+    CombatTab:Slider({
+        Title = "自瞄范围",
+        Desc = "调整自瞄的检测范围",
+        Value = { Min = 10, Max = 200, Default = 50 },
+        Callback = function(value)
+            AimConfig.FOV = value
+        end
+    })
+
+    -- 预测值
+    CombatTab:Slider({
+        Title = "移动预测",
+        Desc = "预测移动目标的提前量",
+        Value = { Min = 0, Max = 1, Default = 0.1 },
+        Callback = function(value)
+            AimConfig.Prediction = value
+        end
+    })
+
+    CombatTab:Divider()
+
+    -- 墙壁透明度
+    CombatTab:Slider({
+        Title = "墙壁透明度",
+        Desc = "调整墙壁的透明度",
+        Value = { Min = 0.1, Max = 0.9, Default = 0.5 },
+        Callback = function(value)
+            WallhackConfig.WallTransparency = value
+        end
+    })
+
+    -- 子弹追踪颜色
+    CombatTab:Colorpicker({
+        Title = "轨迹颜色",
+        Desc = "设置子弹轨迹颜色",
+        Value = Color3.fromRGB(255, 0, 0),
+        Callback = function(value)
+            BulletTrackConfig.TrackColor = value
+        end
+    })
+
+    -- 高亮颜色
+    CombatTab:Colorpicker({
+        Title = "高亮颜色",
+        Desc = "设置目标高亮颜色",
+        Value = Color3.fromRGB(255, 0, 0),
+        Callback = function(value)
+            WallhackConfig.HighlightColor = value
+        end
+    })
+
+    -- 子弹轨迹粗细
+    CombatTab:Slider({
+        Title = "轨迹粗细",
+        Desc = "调整子弹轨迹的粗细",
+        Value = { Min = 1, Max = 10, Default = 2 },
+        Callback = function(value)
+            BulletTrackConfig.TrackThickness = value
+        end
+    })
+
+    -- 轨迹持续时间
+    CombatTab:Slider({
+        Title = "轨迹持续时间",
+        Desc = "调整子弹轨迹显示时间",
+        Value = { Min = 0.1, Max = 5, Default = 1 },
+        Callback = function(value)
+            BulletTrackConfig.TrackDuration = value
+        end
+    })
+
+    CombatTab:Divider()
+
+    -- 自瞄过滤设置
+    CombatTab:Toggle({
+        Title = "团队检查",
+        Desc = "不瞄准队友",
+        Value = true,
+        Callback = function(value)
+            AimConfig.TeamCheck = value
+        end
+    })
+
+    CombatTab:Toggle({
+        Title = "可见性检查",
+        Desc = "只瞄准可见目标",
+        Value = true,
+        Callback = function(value)
+            AimConfig.VisibleCheck = value
+        end
+    })
+
+    CombatTab:Toggle({
+        Title = "高亮目标",
+        Desc = "高亮显示瞄准目标",
+        Value = true,
+        Callback = function(value)
+            WallhackConfig.HighlightTargets = value
+        end
+    })
+
+    CombatTab:Divider()
+
+    -- 快速瞄准按钮
+    CombatTab:Button({
+        Title = "快速瞄准最近目标",
+        Icon = "crosshair",
+        Callback = function()
+            AimAtNearestTarget()
+        end
+    })
+
+    -- 自瞄功能实现
+    local function StartAimbot()
+        if not AimConfig.Enabled then return end
+        
+        local RunService = game:GetService("RunService")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local Camera = workspace.CurrentCamera
+        
+        local connection
+        connection = RunService.RenderStepped:Connect(function()
+            if not AimConfig.Enabled then
+                connection:Disconnect()
+                return
+            end
+            
+            local closestTarget = nil
+            local closestDistance = AimConfig.FOV
+            
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    -- 团队检查
+                    if AimConfig.TeamCheck and player.Team == LocalPlayer.Team then
+                        continue
+                    end
+                    
+                    local character = player.Character
+                    local targetPart = character:FindFirstChild(AimConfig.TargetPart)
+                    
+                    if targetPart then
+                        -- 可见性检查
+                        if AimConfig.VisibleCheck then
+                            local ray = Ray.new(Camera.CFrame.Position, (targetPart.Position - Camera.CFrame.Position).Unit * 1000)
+                            local hit, position = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, character})
+                            if hit and hit:IsDescendantOf(character) then
+                                -- 目标可见
+                            else
+                                continue
+                            end
+                        end
+                        
+                        local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                        if onScreen then
+                            local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                            if distance < closestDistance then
+                                closestDistance = distance
+                                closestTarget = targetPart
+                            end
+                        end
+                    end
+                end
+            end
+            
+            if closestTarget then
+                -- 移动预测
+                local targetPosition = closestTarget.Position
+                if closestTarget.Velocity then
+                    targetPosition = targetPosition + (closestTarget.Velocity * AimConfig.Prediction)
+                end
+                
+                -- 平滑瞄准
+                local currentCFrame = Camera.CFrame
+                local targetCFrame = CFrame.lookAt(currentCFrame.Position, targetPosition)
+                Camera.CFrame = currentCFrame:Lerp(targetCFrame, 1/AimConfig.Smoothness)
+            end
+        end)
+    end
+
+    -- 快速瞄准函数
+    local function AimAtNearestTarget()
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        local Camera = workspace.CurrentCamera
+        
+        local closestTarget = nil
+        local closestDistance = math.huge
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                local character = player.Character
+                local targetPart = character:FindFirstChild(AimConfig.TargetPart)
+                
+                if targetPart then
+                    local distance = (targetPart.Position - Camera.CFrame.Position).Magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestTarget = targetPart
+                    end
+                end
+            end
+        end
+        
+        if closestTarget then
+            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, closestTarget.Position)
+            WindUI:Notify({
+                Title = "快速瞄准",
+                Content = "已瞄准最近目标",
+                Icon = "crosshair",
+                Duration = 2
+            })
+        else
+            WindUI:Notify({
+                Title = "快速瞄准",
+                Content = "未找到可瞄准目标",
+                Icon = "x",
+                Duration = 2
+            })
+        end
+    end
+
+    -- 子弹追踪功能
+    local function SetupBulletTracking()
+        if not BulletTrackConfig.Enabled then return end
+        
+        WindUI:Notify({
+            Title = "子弹追踪",
+            Content = "子弹轨迹显示已准备就绪",
+            Icon = "crosshair",
+            Duration = 3
+        })
+    end
+
+    -- 墙壁透视功能
+    local function SetupWallhack()
+        if not WallhackConfig.Enabled then return end
+        
+        -- 设置墙壁透明度
+        for _, part in ipairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name:lower():find("wall") or part.Name:lower():find("barrier") then
+                part.LocalTransparencyModifier = WallhackConfig.WallTransparency
+            end
+        end
+        
+        WindUI:Notify({
+            Title = "墙壁透视",
+            Content = "透视效果已激活",
+            Icon = "eye",
+            Duration = 3
+        })
+    end
+
+    -- ===============================
+    -- 玩家基础功能
+    -- ===============================
+    local PlayerSection = Window:Section({ Title = "玩家功能", Opened = true })
+    local PlayerTab = PlayerSection:Tab({ Title = "基础属性", Icon = "user" })
+
+    PlayerTab:Paragraph({
+        Title = "玩家属性调整",
+        Desc = "调整玩家基础属性和能力",
+        Image = "user",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    PlayerTab:Divider()
+
+    -- 移动速度调整
+    local speedValue = 16
+    local speedSlider = PlayerTab:Slider({
+        Title = "移动速度",
+        Desc = "调整玩家移动速度",
+        Value = { Min = 0, Max = 200, Default = 16 },
+        Callback = function(value)
+            speedValue = value
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = value
+            end
+        end
+    })
+
+    -- 跳跃高度调整
+    local jumpValue = 50
+    local jumpSlider = PlayerTab:Slider({
+        Title = "跳跃高度",
+        Desc = "调整玩家跳跃高度",
+        Value = { Min = 0, Max = 200, Default = 50 },
+        Callback = function(value)
+            jumpValue = value
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.JumpPower = value
+            end
+        end
+    })
+
+    -- 重力调整
+    PlayerTab:Slider({
+        Title = "重力调整",
+        Desc = "调整游戏世界重力",
+        Value = { Min = 0, Max = 500, Default = 196.2 },
+        Callback = function(value)
+            workspace.Gravity = value
+        end
+    })
+
+    PlayerTab:Divider()
+
+    -- 生命值设置
+    local healthValue = 100
+    PlayerTab:Input({
+        Title = "生命值设置",
+        Desc = "设置玩家当前生命值",
+        Value = "100",
+        Callback = function(value)
+            healthValue = tonumber(value) or 100
+        end
+    })
+
+    PlayerTab:Button({
+        Title = "应用生命值",
+        Icon = "heart",
+        Callback = function()
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.Health = healthValue
+                WindUI:Notify({
+                    Title = "生命值已设置",
+                    Content = "生命值: " .. healthValue,
+                    Icon = "check",
+                    Duration = 3
+                })
+            else
+                WindUI:Notify({
+                    Title = "错误",
+                    Content = "找不到角色或Humanoid",
+                    Icon = "x",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 最大生命值设置
+    local maxHealthValue = 100
+    PlayerTab:Input({
+        Title = "最大生命值",
+        Desc = "设置玩家最大生命值",
+        Value = "100",
+        Callback = function(value)
+            maxHealthValue = tonumber(value) or 100
+        end
+    })
+
+    PlayerTab:Button({
+        Title = "应用最大生命值",
+        Icon = "activity",
+        Callback = function()
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.MaxHealth = maxHealthValue
+                WindUI:Notify({
+                    Title = "最大生命值已设置",
+                    Content = "最大生命值: " .. maxHealthValue,
+                    Icon = "check",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    PlayerTab:Divider()
+
+    -- 角色大小调整
+    PlayerTab:Slider({
+        Title = "角色大小",
+        Desc = "调整角色大小比例",
+        Value = { Min = 0.1, Max = 5, Default = 1 },
+        Callback = function(value)
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid.BodyHeightScale = value
+                    humanoid.BodyWidthScale = value
+                    humanoid.BodyDepthScale = value
+                    humanoid.HeadScale = value
+                end
+            end
+        end
+    })
+
+    -- ===============================
+    -- 移动功能
+    -- ===============================
+    local MoveTab = PlayerSection:Tab({ Title = "移动功能", Icon = "navigation" })
+
+    MoveTab:Paragraph({
+        Title = "高级移动功能",
+        Desc = "解锁各种移动能力",
+        Image = "navigation",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    MoveTab:Divider()
+
+    -- 穿墙模式
+    local noclipEnabled = false
+    local noclipConnection
+
+    MoveTab:Toggle({
+        Title = "穿墙模式",
+        Desc = "启用/禁用穿墙功能",
+        Value = false,
+        Callback = function(value)
+            noclipEnabled = value
+            
+            if value then
+                WindUI:Notify({
+                    Title = "穿墙已启用",
+                    Content = "现在可以穿过墙壁",
+                    Icon = "git-merge",
+                    Duration = 3
+                })
+                
+                -- 穿墙逻辑
+                noclipConnection = game:GetService("RunService").Stepped:Connect(function()
+                    if noclipEnabled then
+                        local character = game.Players.LocalPlayer.Character
+                        if character then
+                            for _, part in pairs(character:GetDescendants()) do
+                                if part:IsA("BasePart") then
+                                    part.CanCollide = false
+                                end
+                            end
+                        end
+                    else
+                        if noclipConnection then
+                            noclipConnection:Disconnect()
+                        end
+                    end
+                end)
+            else
+                if noclipConnection then
+                    noclipConnection:Disconnect()
+                end
+                WindUI:Notify({
+                    Title = "穿墙已禁用",
+                    Content = "碰撞检测已恢复",
+                    Icon = "git-merge",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 无限跳跃
+    local infiniteJumpEnabled = false
+    local jumpConnection
+
+    MoveTab:Toggle({
+        Title = "无限跳跃",
+        Desc = "启用/禁用无限跳跃",
+        Value = false,
+        Callback = function(value)
+            infiniteJumpEnabled = value
+            
+            if value then
+                WindUI:Notify({
+                    Title = "无限跳跃已启用",
+                    Content = "现在可以无限跳跃",
+                    Icon = "wind",
+                    Duration = 3
+                })
+                
+                jumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                    if infiniteJumpEnabled then
+                        local character = game.Players.LocalPlayer.Character
+                        if character and character:FindFirstChildOfClass("Humanoid") then
+                            character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+                        end
+                    end
+                end)
+            else
+                if jumpConnection then
+                    jumpConnection:Disconnect()
+                end
+                WindUI:Notify({
+                    Title = "无限跳跃已禁用",
+                    Content = "跳跃恢复正常",
+                    Icon = "wind",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    MoveTab:Divider()
+
+    -- 点击传送
+    MoveTab:Button({
+        Title = "点击传送",
+        Icon = "map-pin",
+        Callback = function()
+            local mouse = game.Players.LocalPlayer:GetMouse()
+            local tool = Instance.new("Tool")
+            tool.RequiresHandle = false
+            tool.Name = "点击传送工具"
+            tool.Activated:Connect(function()
+                local pos = mouse.Hit + Vector3.new(0, 3, 0)
+                local character = game.Players.LocalPlayer.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    character.HumanoidRootPart.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+                end
+            end)
+            tool.Parent = game.Players.LocalPlayer.Backpack
+            
+            WindUI:Notify({
+                Title = "传送工具已添加",
+                Content = "请在背包中使用传送工具",
+                Icon = "map-pin",
+                Duration = 3
+            })
+        end
+    })
+
+    -- 玩家传送
+    local playersList = {}
+    local playerDropdown = MoveTab:Dropdown({
+        Title = "传送到玩家",
+        Desc = "选择要传送到的玩家",
+        Value = "",
+        Options = {},
+        Callback = function(value)
+            if value and value ~= "" then
+                local targetPlayer = game.Players:FindFirstChild(value)
+                if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local character = game.Players.LocalPlayer.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                        WindUI:Notify({
+                            Title = "传送成功",
+                            Content = "已传送到: " .. value,
+                            Icon = "user-check",
+                            Duration = 3
+                        })
+                    end
+                end
+            end
+        end
+    })
+
+    -- 更新玩家列表函数
+    local function updatePlayersList()
+        playersList = {}
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                table.insert(playersList, player.Name)
+            end
+        end
+        playerDropdown:Set(playersList)
+    end
+
+    -- 初始化玩家列表
+    updatePlayersList()
+    game.Players.PlayerAdded:Connect(updatePlayersList)
+    game.Players.PlayerRemoving:Connect(updatePlayersList)
+
+    MoveTab:Button({
+        Title = "刷新玩家列表",
+        Icon = "refresh-cw",
+        Callback = updatePlayersList
+    })
+
+    MoveTab:Divider()
+
+    -- 速度爆发
+    MoveTab:Button({
+        Title = "速度爆发",
+        Icon = "zap",
+        Callback = function()
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                local originalSpeed = character.Humanoid.WalkSpeed
+                character.Humanoid.WalkSpeed = 100
+                
+                WindUI:Notify({
+                    Title = "速度爆发激活",
+                    Content = "移动速度临时提升至100",
+                    Icon = "zap",
+                    Duration = 3
+                })
+                
+                -- 5秒后恢复
+                delay(5, function()
+                    if character and character:FindFirstChild("Humanoid") then
+                        character.Humanoid.WalkSpeed = originalSpeed
+                        WindUI:Notify({
+                            Title = "速度爆发结束",
+                            Content = "移动速度已恢复",
+                            Icon = "zap",
+                            Duration = 3
+                        })
+                    end
+                end)
+            end
+        end
+    })
+
+    -- ===============================
+    -- 高级彩色透视系统
+    -- ===============================
+    local ESPTab = PlayerSection:Tab({ Title = "优化透视", Icon = "eye" })
+
+    ESPTab:Paragraph({
+        Title = "高级透视系统",
+        Desc = "彩色透视功能，支持多种显示模式",
+        Image = "eye",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    ESPTab:Divider()
+
+    -- 透视系统配置
+    local AdvancedESP = {
+        Enabled = false,
+        Objects = {},
+        Connections = {},
+        Settings = {
+            ShowBox = true,
+            ShowName = true,
+            ShowHealth = true,
+            ShowDistance = true,
+            ShowTracers = false,
+            TeamCheck = true,
+            UseTeamColor = true,
+            MaxDistance = 2000,
+            BoxColor = Color3.fromRGB(255, 255, 255),
+            TextColor = Color3.fromRGB(255, 255, 255),
+            TracerColor = Color3.fromRGB(255, 255, 255),
+            BoxTransparency = 0.3,
+            TextSize = 14,
+            TracerThickness = 1
+        }
+    }
+
+    -- 获取玩家颜色
+    local function GetPlayerColor(player, health)
+        if AdvancedESP.Settings.UseTeamColor and player.Team then
+            return player.Team.TeamColor.Color
+        else
+            -- 血量颜色渐变
+            local healthPercent = health or 1
+            if healthPercent > 0.7 then
+                return Color3.fromRGB(0, 255, 0) -- 绿色
+            elseif healthPercent > 0.3 then
+                return Color3.fromRGB(255, 255, 0) -- 黄色
+            else
+                return Color3.fromRGB(255, 0, 0) -- 红色
+            end
+        end
+    end
+
+    -- 创建ESP对象
+    local function CreateESP(player)
+        if player == game.Players.LocalPlayer then return end
+        
+        local espObject = {
+            Player = player,
+            Box = nil,
+            NameLabel = nil,
+            HealthBar = nil,
+            DistanceLabel = nil,
+            Tracer = nil
+        }
+        
+        AdvancedESP.Objects[player] = espObject
+        
+        -- 监听角色生成
+        espObject.CharacterAdded = player.CharacterAdded:Connect(function(character)
+            task.wait(1)
+            if AdvancedESP.Enabled then
+                CreateESPComponents(player, character)
+            end
+        end)
+        
+        -- 如果角色已存在，立即创建组件
+        if player.Character then
+            CreateESPComponents(player, player.Character)
+        end
+    end
+
+    -- 创建ESP组件
+    local function CreateESPComponents(player, character)
+        local humanoid = character:WaitForChild("Humanoid", 5)
+        local rootPart = character:WaitForChild("HumanoidRootPart", 5)
+        
+        if not humanoid or not rootPart then return end
+        
+        local espObject = AdvancedESP.Objects[player]
+        if not espObject then return end
+        
+        -- 创建方框
+        if AdvancedESP.Settings.ShowBox then
+            local box = Instance.new("BoxHandleAdornment")
+            box.Name = "ESPBox"
+            box.Adornee = rootPart
+            box.AlwaysOnTop = true
+            box.ZIndex = 5
+            box.Size = Vector3.new(4, 6, 1)
+            box.Color3 = GetPlayerColor(player, humanoid.Health / humanoid.MaxHealth)
+            box.Transparency = AdvancedESP.Settings.BoxTransparency
+            box.Parent = rootPart
+            
+            espObject.Box = box
+        end
+        
+        -- 创建名称标签
+        if AdvancedESP.Settings.ShowName then
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "ESPName"
+            billboard.Adornee = rootPart
+            billboard.Size = UDim2.new(0, 200, 0, 50)
+            billboard.StudsOffset = Vector3.new(0, 3.5, 0)
+            billboard.AlwaysOnTop = true
+            billboard.MaxDistance = AdvancedESP.Settings.MaxDistance
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = player.Name
+            label.TextColor3 = AdvancedESP.Settings.TextColor
+            label.TextStrokeTransparency = 0.5
+            label.TextStrokeColor3 = Color3.new(0, 0, 0)
+            label.TextSize = AdvancedESP.Settings.TextSize
+            label.Font = Enum.Font.GothamBold
+            label.BorderSizePixel = 0
+            label.Parent = billboard
+            
+            billboard.Parent = rootPart
+            espObject.NameLabel = billboard
+        end
+        
+        -- 创建血条
+        if AdvancedESP.Settings.ShowHealth then
+            local healthBillboard = Instance.new("BillboardGui")
+            healthBillboard.Name = "ESPHealth"
+            healthBillboard.Adornee = rootPart
+            healthBillboard.Size = UDim2.new(0, 50, 0, 100)
+            healthBillboard.StudsOffset = Vector3.new(2.5, 0, 0)
+            healthBillboard.AlwaysOnTop = true
+            healthBillboard.MaxDistance = AdvancedESP.Settings.MaxDistance
+            
+            local background = Instance.new("Frame")
+            background.Size = UDim2.new(0, 6, 1, 0)
+            background.BackgroundColor3 = Color3.new(0, 0, 0)
+            background.BorderSizePixel = 0
+            background.Parent = healthBillboard
+            
+            local bar = Instance.new("Frame")
+            bar.Size = UDim2.new(1, 0, 1, 0)
+            bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+            bar.BorderSizePixel = 0
+            bar.Parent = background
+            
+            healthBillboard.Parent = rootPart
+            espObject.HealthBar = {Background = background, Bar = bar}
+        end
+        
+        -- 创建距离标签
+        if AdvancedESP.Settings.ShowDistance then
+            local distanceBillboard = Instance.new("BillboardGui")
+            distanceBillboard.Name = "ESPDistance"
+            distanceBillboard.Adornee = rootPart
+            distanceBillboard.Size = UDim2.new(0, 200, 0, 30)
+            distanceBillboard.StudsOffset = Vector3.new(0, 2.8, 0)
+            distanceBillboard.AlwaysOnTop = true
+            distanceBillboard.MaxDistance = AdvancedESP.Settings.MaxDistance
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = "0m"
+            label.TextColor3 = Color3.fromRGB(200, 200, 200)
+            label.TextStrokeTransparency = 0.5
+            label.TextStrokeColor3 = Color3.new(0, 0, 0)
+            label.TextSize = 12
+            label.Font = Enum.Font.Gotham
+            label.BorderSizePixel = 0
+            label.Parent = distanceBillboard
+            
+            distanceBillboard.Parent = rootPart
+            espObject.DistanceLabel = distanceBillboard
+        end
+        
+        -- 创建追踪线
+        if AdvancedESP.Settings.ShowTracers then
+            local tracer = Drawing.new("Line")
+            tracer.Visible = false
+            tracer.Color = AdvancedESP.Settings.TracerColor
+            tracer.Thickness = AdvancedESP.Settings.TracerThickness
+            tracer.ZIndex = 1
+            
+            espObject.Tracer = tracer
+        end
+    end
+
+    -- 更新ESP
+    local function UpdateESP()
+        while AdvancedESP.Enabled do
+            for player, espObject in pairs(AdvancedESP.Objects) do
+                local character = player.Character
+                local localPlayer = game.Players.LocalPlayer
+                local localCharacter = localPlayer.Character
+                
+                if character and localCharacter then
+                    local humanoid = character:FindFirstChild("Humanoid")
+                    local rootPart = character:FindFirstChild("HumanoidRootPart")
+                    local localRootPart = localCharacter:FindFirstChild("HumanoidRootPart")
+                    
+                    if humanoid and rootPart and localRootPart then
+                        local distance = (rootPart.Position - localRootPart.Position).Magnitude
+                        local health = humanoid.Health
+                        local maxHealth = humanoid.MaxHealth
+                        local healthPercent = health / maxHealth
+                        
+                        -- 团队检查
+                        if AdvancedESP.Settings.TeamCheck and player.Team == localPlayer.Team then
+                            SetESPVisibility(espObject, false)
+                            continue
+                        else
+                            SetESPVisibility(espObject, true)
+                        end
+                        
+                        -- 距离检查
+                        if distance > AdvancedESP.Settings.MaxDistance then
+                            SetESPVisibility(espObject, false)
+                            continue
+                        end
+                        
+                        -- 更新方框颜色
+                        if espObject.Box then
+                            espObject.Box.Color3 = GetPlayerColor(player, healthPercent)
+                        end
+                        
+                        -- 更新血条
+                        if espObject.HealthBar then
+                            local bar = espObject.HealthBar.Bar
+                            bar.Size = UDim2.new(1, 0, healthPercent, 0)
+                            bar.Position = UDim2.new(0, 0, 1 - healthPercent, 0)
+                            
+                            -- 血量颜色渐变
+                            if healthPercent > 0.7 then
+                                bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                            elseif healthPercent > 0.3 then
+                                bar.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+                            else
+                                bar.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                            end
+                        end
+                        
+                        -- 更新距离
+                        if espObject.DistanceLabel then
+                            local label = espObject.DistanceLabel:FindFirstChildWhichIsA("TextLabel")
+                            if label then
+                                label.Text = string.format("%dm", math.floor(distance))
+                            end
+                        end
+                        
+                        -- 更新追踪线
+                        if espObject.Tracer then
+                            local screenPoint, visible = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
+                            local localScreenPoint = workspace.CurrentCamera:WorldToViewportPoint(localRootPart.Position)
+                            
+                            if visible then
+                                espObject.Tracer.Visible = true
+                                espObject.Tracer.From = Vector2.new(localScreenPoint.X, localScreenPoint.Y)
+                                espObject.Tracer.To = Vector2.new(screenPoint.X, screenPoint.Y)
+                            else
+                                espObject.Tracer.Visible = false
+                            end
+                        end
+                    else
+                        SetESPVisibility(espObject, false)
+                    end
+                else
+                    SetESPVisibility(espObject, false)
+                end
+            end
+            task.wait(0.1)
+        end
+    end
+
+    -- 设置ESP可见性
+    local function SetESPVisibility(espObject, visible)
+        if espObject.Box then
+            espObject.Box.Visible = visible
+        end
+        if espObject.NameLabel then
+            espObject.NameLabel.Enabled = visible
+        end
+        if espObject.HealthBar then
+            espObject.HealthBar.Background.Visible = visible
+        end
+        if espObject.DistanceLabel then
+            espObject.DistanceLabel.Enabled = visible
+        end
+        if espObject.Tracer then
+            espObject.Tracer.Visible = visible
+        end
+    end
+
+    -- 清理ESP对象
+    local function CleanupESPObject(player)
+        local espObject = AdvancedESP.Objects[player]
+        if espObject then
+            -- 断开连接
+            if espObject.CharacterAdded then
+                espObject.CharacterAdded:Disconnect()
+            end
+            
+            -- 清理图形对象
+            if espObject.Box then
+                espObject.Box:Destroy()
+            end
+            if espObject.NameLabel then
+                espObject.NameLabel:Destroy()
+            end
+            if espObject.HealthBar then
+                espObject.HealthBar.Background:Destroy()
+            end
+            if espObject.DistanceLabel then
+                espObject.DistanceLabel:Destroy()
+            end
+            if espObject.Tracer then
+                espObject.Tracer:Remove()
+            end
+            
+            AdvancedESP.Objects[player] = nil
+        end
+    end
+
+    -- 初始化ESP系统
+    local function InitializeESP()
+        -- 为现有玩家创建ESP
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                CreateESP(player)
+            end
+        end
+        
+        -- 监听新玩家
+        AdvancedESP.Connections.playerAdded = game.Players.PlayerAdded:Connect(function(player)
+            CreateESP(player)
+        end)
+        
+        -- 监听玩家离开
+        AdvancedESP.Connections.playerRemoving = game.Players.PlayerRemoving:Connect(function(player)
+            CleanupESPObject(player)
+        end)
+        
+        -- 开始更新循环
+        coroutine.wrap(UpdateESP)()
+        
+        WindUI:Notify({
+            Title = "透视系统已启动",
+            Content = "高级彩色透视正在运行",
+            Icon = "eye",
+            Duration = 3
+        })
+    end
+
+    -- 关闭ESP系统
+    local function ShutdownESP()
+        AdvancedESP.Enabled = false
+        
+        -- 清理所有ESP对象
+        for player, _ in pairs(AdvancedESP.Objects) do
+            CleanupESPObject(player)
+        end
+        
+        -- 断开连接
+        for _, connection in pairs(AdvancedESP.Connections) do
+            connection:Disconnect()
+        end
+        AdvancedESP.Connections = {}
+        
+        WindUI:Notify({
+            Title = "透视系统已关闭",
+            Content = "所有透视效果已清除",
+            Icon = "eye-off",
+            Duration = 3
+        })
+    end
+
+    -- ESP主开关
+    ESPTab:Toggle({
+        Title = "启用透视",
+        Desc = "开启/关闭透视系统",
+        Value = false,
+        Callback = function(value)
+            AdvancedESP.Enabled = value
+            if value then
+                InitializeESP()
+            else
+                ShutdownESP()
+            end
+        end
+    })
+
+    ESPTab:Divider()
+
+    -- 显示设置
+    ESPTab:Toggle({
+        Title = "显示方框",
+        Desc = "显示玩家彩色边框",
+        Value = true,
+        Callback = function(value)
+            AdvancedESP.Settings.ShowBox = value
+        end
+    })
+
+    ESPTab:Toggle({
+        Title = "显示名称",
+        Desc = "显示玩家名称标签",
+        Value = true,
+        Callback = function(value)
+            AdvancedESP.Settings.ShowName = value
+        end
+    })
+
+    ESPTab:Toggle({
+        Title = "显示血条",
+        Desc = "显示动态血量条",
+        Value = true,
+        Callback = function(value)
+            AdvancedESP.Settings.ShowHealth = value
+        end
+    })
+
+    ESPTab:Toggle({
+        Title = "显示距离",
+        Desc = "显示与玩家的距离",
+        Value = true,
+        Callback = function(value)
+            AdvancedESP.Settings.ShowDistance = value
+        end
+    })
+
+    ESPTab:Toggle({
+        Title = "显示追踪线",
+        Desc = "显示指向玩家的线条",
+        Value = false,
+        Callback = function(value)
+            AdvancedESP.Settings.ShowTracers = value
+        end
+    })
+
+    ESPTab:Divider()
+
+    -- 过滤设置
+    ESPTab:Toggle({
+        Title = "团队检查",
+        Desc = "不显示同队玩家",
+        Value = true,
+        Callback = function(value)
+            AdvancedESP.Settings.TeamCheck = value
+        end
+    })
+
+    ESPTab:Toggle({
+        Title = "使用队伍颜色",
+        Desc = "根据队伍显示颜色",
+        Value = true,
+        Callback = function(value)
+            AdvancedESP.Settings.UseTeamColor = value
+        end
+    })
+
+    ESPTab:Divider()
+
+    -- 外观设置
+    ESPTab:Slider({
+        Title = "最大距离",
+        Desc = "透视显示的最大距离",
+        Value = { Min = 100, Max = 5000, Default = 2000 },
+        Callback = function(value)
+            AdvancedESP.Settings.MaxDistance = value
+        end
+    })
+
+    ESPTab:Slider({
+        Title = "方框透明度",
+        Desc = "调整方框的透明度",
+        Value = { Min = 0, Max = 1, Default = 0.3 },
+        Callback = function(value)
+            AdvancedESP.Settings.BoxTransparency = value
+        end
+    })
+
+    ESPTab:Slider({
+        Title = "文字大小",
+        Desc = "调整标签文字大小",
+        Value = { Min = 8, Max = 24, Default = 14 },
+        Callback = function(value)
+            AdvancedESP.Settings.TextSize = value
+        end
+    })
+
+    ESPTab:Slider({
+        Title = "追踪线粗细",
+        Desc = "调整追踪线粗细",
+        Value = { Min = 1, Max = 5, Default = 1 },
+        Callback = function(value)
+            AdvancedESP.Settings.TracerThickness = value
+        end
+    })
+
+    ESPTab:Divider()
+
+    -- 工具按钮
+    ESPTab:Button({
+        Title = "刷新透视系统",
+        Icon = "refresh-cw",
+        Callback = function()
+            if AdvancedESP.Enabled then
+                ShutdownESP()
+                task.wait(0.5)
+                AdvancedESP.Enabled = true
+                InitializeESP()
+                WindUI:Notify({
+                    Title = "透视系统已刷新",
+                    Content = "系统重新初始化完成",
+                    Icon = "refresh-cw",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- ===============================
+    -- 工具功能
+    -- ===============================
+    local ToolsTab = PlayerSection:Tab({ Title = "工具功能", Icon = "tool" })
+
+    ToolsTab:Paragraph({
+        Title = "实用工具",
+        Desc = "各种辅助工具和功能",
+        Image = "tool",
+        ImageSize = 20,
+        Color = "White",
+    })
+
+    ToolsTab:Divider()
+
+    -- 反AFK功能
+    local antiAFKEnabled = false
+    ToolsTab:Toggle({
+        Title = "反AFK检测",
+        Desc = "防止被系统踢出游戏",
+        Value = false,
+        Callback = function(value)
+            antiAFKEnabled = value
+            if value then
+                WindUI:Notify({
+                    Title = "反AFK已启用",
+                    Content = "AFK检测已被绕过",
+                    Icon = "shield",
+                    Duration = 3
+                })
+                
+                local virtualUser = game:GetService("VirtualUser")
+                game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                    if antiAFKEnabled then
+                        virtualUser:CaptureController()
+                        virtualUser:ClickButton2(Vector2.new())
+                    end
+                end)
+            else
+                WindUI:Notify({
+                    Title = "反AFK已禁用",
+                    Content = "AFK检测已恢复",
+                    Icon = "shield",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    ToolsTab:Divider()
+
+    -- 服务器信息
+    ToolsTab:Button({
+        Title = "服务器信息",
+        Icon = "server",
+        Callback = function()
+            local players = game.Players:GetPlayers()
+            local playerCount = #players
+            local maxPlayers = game.Players.MaxPlayers
+            local placeId = game.PlaceId
+            
+            WindUI:Notify({
+                Title = "服务器信息",
+                Content = string.format("玩家: %d/%d\n地图ID: %d", playerCount, maxPlayers, placeId),
+                Icon = "server",
+                Duration = 5
+            })
+        end
+    })
+
+    -- 复制游戏ID
+    ToolsTab:Button({
+        Title = "复制游戏ID",
+        Icon = "copy",
+        Callback = function()
+            local placeId = tostring(game.PlaceId)
+            setclipboard(placeId)
+            WindUI:Notify({
+                Title = "游戏ID已复制",
+                Content = "游戏ID: " .. placeId,
+                Icon = "copy",
+                Duration = 3
+            })
+        end
+    })
+
+    ToolsTab:Divider()
+
+    -- 重置角色
+    ToolsTab:Button({
+        Title = "重置角色",
+        Icon = "refresh-cw",
+        Variant = "Secondary",
+        Callback = function()
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                character:BreakJoints()
+                WindUI:Notify({
+                    Title = "角色已重置",
+                    Content = "角色正在重新生成",
+                    Icon = "refresh-cw",
+                    Duration = 3
+                })
+            end
+        end
+    })
+
+    -- 重置所有设置
+    ToolsTab:Button({
+        Title = "重置所有设置",
+        Icon = "trash-2",
+        Variant = "Destructive",
+        Callback = function()
+            -- 重置速度
+            speedSlider:Set(16)
+            local character = game.Players.LocalPlayer.Character
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.WalkSpeed = 16
+            end
+            
+            -- 重置跳跃
+            jumpSlider:Set(50)
+            if character and character:FindFirstChild("Humanoid") then
+                character.Humanoid.JumpPower = 50
+            end
+            
+            -- 重置重力
+            workspace.Gravity = 196.2
+            
+            -- 禁用功能
+            noclipEnabled = false
+            if noclipConnection then
+                noclipConnection:Disconnect()
+            end
+            
+            infiniteJumpEnabled = false
+            if jumpConnection then
+                jumpConnection:Disconnect()
+            end
+            
+            antiAFKEnabled = false
+            AdvancedESP.Enabled = false
+            ShutdownESP()
+            
+            AimConfig.Enabled = false
+            BulletTrackConfig.Enabled = false
+            WallhackConfig.Enabled = false
+            
+            WindUI:Notify({
+                Title = "重置完成",
+                Content = "所有设置已恢复默认值",
+                Icon = "check",
+                Duration = 3
+            })
+        end
+    })
+
+    -- ===============================
+    -- UI设置
+    -- ===============================
+    local SettingsSection = Window:Section({ Title = "设置", Opened = false })
+    local SettingsTab = SettingsSection:Tab({ Title = "UI设置", Icon = "settings" })
+
+    -- UI透明度
+    SettingsTab:Slider({
+        Title = "UI透明度",
+        Desc = "调整界面透明度",
+        Value = { Min = 0, Max = 1, Default = 0.2 },
+        Callback = function(value)
+            WindUI.TransparencyValue = value
+        end
+    })
+
+    -- 自动保存
+    local autoSaveEnabled = false
+    SettingsTab:Toggle({
+        Title = "自动保存设置",
+        Desc = "自动保存您的配置",
+        Value = false,
+        Callback = function(value)
+            autoSaveEnabled = value
+            WindUI:Notify({
+                Title = "自动保存",
+                Content = value and "已启用" or "已禁用",
+                Duration = 2
+            })
+        end
+    })
+
+    -- 性能模式
+    local performanceMode = false
+    SettingsTab:Toggle({
+        Title = "性能模式",
+        Desc = "降低特效提高性能",
+        Value = false,
+        Callback = function(value)
+            performanceMode = value
+            WindUI:Notify({
+                Title = "性能模式",
+                Content = value and "已启用" or "已禁用",
+                Duration = 2
+            })
+        end
+    })
+
+    -- 清理函数
+    Window:OnClose(function()
+        -- 清理资源
+        if noclipConnection then
+            noclipConnection:Disconnect()
+        end
+        if jumpConnection then
+            jumpConnection:Disconnect()
+        end
+        if AdvancedESP.Enabled then
+            ShutdownESP()
+        end
+        -- 清理水印
+        if watermark then
+            watermark:Destroy()
+        end
+    end)
+
+    Window:OnDestroy(function()
+        -- 最终清理
+        if noclipConnection then
+            noclipConnection:Disconnect()
+        end
+        if jumpConnection then
+            jumpConnection:Disconnect()
+        end
+        if AdvancedESP.Enabled then
+            ShutdownESP()
+        end
+        -- 清理水印
+        if watermark then
+            watermark:Destroy()
+        end
+    end)
+
+    -- 初始化完成提示
+    WindUI:Notify({
+        Title = "LOLXinQingHUB 加载完成",
+        Content = "所有功能已就绪，开始使用吧！",
+        Icon = "check",
+        Duration = 5
+    })
+end
+
+-- 安全执行主函数
+local success, err = pcall(SafeLoad)
+if not success then
+    warn("LOLXinQingHUB加载错误: " .. err)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "LOLXinQingHUB 错误",
+        Text = "加载失败: " .. tostring(err),
+        Duration = 5
+    })
+end
