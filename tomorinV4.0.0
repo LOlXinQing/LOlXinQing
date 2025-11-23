@@ -1,0 +1,1371 @@
+local SnowEffect = nil
+local SnowEnabled = false
+
+-- 粉色飘雪效果
+local function CreateSnowEffect(parent)
+    if SnowEffect then
+        SnowEffect:Destroy()
+    end
+    
+    local SnowGui = Instance.new("ScreenGui")
+    SnowGui.Name = "PinkSnowEffect"
+    SnowGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    SnowGui.ResetOnSpawn = false
+    
+    -- 创建多个雪花
+    local snowflakes = {}
+    local function CreateSnowflake()
+        local snowflake = Instance.new("Frame")
+        local size = math.random(4, 12)
+        snowflake.Size = UDim2.new(0, size, 0, size)
+        snowflake.Position = UDim2.new(0, math.random(-100, 1200), 0, -20)
+        snowflake.BackgroundColor3 = Color3.fromRGB(255, 182, 193) -- 粉红色
+        snowflake.BorderSizePixel = 0
+        snowflake.BackgroundTransparency = math.random(2, 8) / 10
+        snowflake.Parent = SnowGui
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = snowflake
+        
+        table.insert(snowflakes, {
+            Frame = snowflake,
+            Speed = math.random(20, 60),
+            Swing = math.random(1, 10),
+            SwingSpeed = math.random(1, 5) / 100,
+            Size = size
+        })
+    end
+    
+    -- 创建初始雪花
+    for i = 1, 100 do
+        CreateSnowflake()
+    end
+    
+    -- 雪花动画
+    local connection
+    connection = game:GetService("RunService").RenderStepped:Connect(function(delta)
+        if not SnowEnabled then
+            connection:Disconnect()
+            return
+        end
+        
+        for i, snowflake in ipairs(snowflakes) do
+            local currentX = snowflake.Frame.Position.X.Offset
+            local currentY = snowflake.Frame.Position.Y.Offset
+            
+            -- 下落
+            local newY = currentY + snowflake.Speed * delta
+            
+            -- 摆动效果
+            local swingOffset = math.sin(tick() * snowflake.SwingSpeed + snowflake.Swing) * 3
+            
+            -- 如果雪花落到底部，重新从顶部开始
+            if newY > 800 then
+                newY = -20
+                currentX = math.random(-100, 1200)
+            end
+            
+            snowflake.Frame.Position = UDim2.new(0, currentX + swingOffset, 0, newY)
+            
+            -- 轻微旋转效果
+            snowflake.Frame.Rotation = math.sin(tick() * snowflake.SwingSpeed) * 10
+        end
+        
+        -- 偶尔添加新雪花
+        if math.random(1, 15) == 1 and #snowflakes < 120 then
+            CreateSnowflake()
+        end
+    end)
+    
+    SnowGui.Parent = parent
+    SnowEffect = SnowGui
+    SnowEnabled = true
+    
+    return SnowGui
+end
+
+local function RemoveSnowEffect()
+    SnowEnabled = false
+    if SnowEffect then
+        SnowEffect:Destroy()
+        SnowEffect = nil
+    end
+end
+
+-- 透视功能
+local function AddESP()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local RunService = game:GetService("RunService")
+    
+    local ESPEnabled = false
+    local ESPObjects = {}
+    
+    local function CreateESP(player)
+        if player == LocalPlayer then return end
+        
+        local esp = {
+            Player = player,
+            Box = nil,
+            NameLabel = nil
+        }
+        
+        ESPObjects[player] = esp
+        
+        local function CreateESPComponents(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            local head = character:WaitForChild("Head")
+            
+            -- 创建方框
+            local box = Instance.new("BoxHandleAdornment")
+            box.Name = "ESPBox"
+            box.Adornee = head
+            box.AlwaysOnTop = true
+            box.ZIndex = 5
+            box.Size = Vector3.new(4, 6, 1)
+            box.Color3 = Color3.fromRGB(255, 0, 0)
+            box.Transparency = 0.3
+            box.Visible = ESPEnabled
+            box.Parent = head
+            
+            -- 创建名称标签
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "ESPName"
+            billboard.Adornee = head
+            billboard.Size = UDim2.new(0, 200, 0, 50)
+            billboard.StudsOffset = Vector3.new(0, 3, 0)
+            billboard.AlwaysOnTop = true
+            billboard.Enabled = ESPEnabled
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = player.Name
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextStrokeTransparency = 0.5
+            label.TextStrokeColor3 = Color3.new(0, 0, 0)
+            label.TextSize = 14
+            label.Font = Enum.Font.GothamBold
+            label.Parent = billboard
+            
+            billboard.Parent = head
+            
+            esp.Box = box
+            esp.NameLabel = billboard
+        end
+        
+        -- 监听角色生成
+        player.CharacterAdded:Connect(function(character)
+            wait(1)
+            if ESPEnabled then
+                CreateESPComponents(character)
+            end
+        end)
+        
+        -- 如果角色已存在
+        if player.Character then
+            CreateESPComponents(player.Character)
+        end
+    end
+    
+    local function RemoveESP(player)
+        local esp = ESPObjects[player]
+        if esp then
+            if esp.Box then
+                esp.Box:Destroy()
+            end
+            if esp.NameLabel then
+                esp.NameLabel:Destroy()
+            end
+            ESPObjects[player] = nil
+        end
+    end
+    
+    local function UpdateESP()
+        for player, esp in pairs(ESPObjects) do
+            if esp.Box then
+                esp.Box.Visible = ESPEnabled
+            end
+            if esp.NameLabel then
+                esp.NameLabel.Enabled = ESPEnabled
+            end
+        end
+    end
+    
+    -- 为现有玩家创建ESP
+    for _, player in ipairs(Players:GetPlayers()) do
+        CreateESP(player)
+    end
+    
+    -- 监听新玩家
+    Players.PlayerAdded:Connect(CreateESP)
+    Players.PlayerRemoving:Connect(RemoveESP)
+    
+    return {
+        Toggle = function()
+            ESPEnabled = not ESPEnabled
+            UpdateESP()
+            return ESPEnabled
+        end,
+        IsEnabled = function()
+            return ESPEnabled
+        end
+    }
+end
+
+-- 无敌模式功能
+local function AddGodMode()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local RunService = game:GetService("RunService")
+    
+    local GodModeEnabled = false
+    local GodModeConnection = nil
+    
+    local function EnableGodMode()
+        if GodModeConnection then
+            GodModeConnection:Disconnect()
+        end
+        
+        GodModeConnection = RunService.Heartbeat:Connect(function()
+            if not GodModeEnabled then
+                GodModeConnection:Disconnect()
+                return
+            end
+            
+            local character = LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    -- 防止死亡
+                    if humanoid.Health <= 0 then
+                        humanoid.Health = 100
+                    end
+                    
+                    -- 设置最大生命值
+                    humanoid.MaxHealth = math.huge
+                    humanoid.Health = math.huge
+                    
+                    -- 免疫伤害
+                    for _, part in pairs(character:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                            part.Material = Enum.Material.Neon
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    
+    local function DisableGodMode()
+        if GodModeConnection then
+            GodModeConnection:Disconnect()
+            GodModeConnection = nil
+        end
+        
+        local character = LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.MaxHealth = 100
+                humanoid.Health = 100
+                
+                for _, part in pairs(character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                        part.Material = Enum.Material.Plastic
+                    end
+                end
+            end
+        end
+    end
+    
+    return {
+        Toggle = function()
+            GodModeEnabled = not GodModeEnabled
+            if GodModeEnabled then
+                EnableGodMode()
+            else
+                DisableGodMode()
+            end
+            return GodModeEnabled
+        end,
+        IsEnabled = function()
+            return GodModeEnabled
+        end
+    }
+end
+
+-- 主验证系统
+local function CreateKeySystem()
+    local KeySystem = {
+        ValidKey = "tomorin",
+        IsVerified = false
+    }
+
+    -- 创建粉紫色主题卡密验证界面
+    local KeyGui = Instance.new("ScreenGui")
+    KeyGui.Name = "LOLXinQingKeySystem"
+    KeyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    KeyGui.ResetOnSpawn = false
+
+    -- 创建粉色飘雪效果
+    CreateSnowEffect(KeyGui)
+
+    -- 透明背景，确保毫无遮挡
+    local BackgroundFrame = Instance.new("Frame")
+    BackgroundFrame.Size = UDim2.new(1, 0, 1, 0)
+    BackgroundFrame.BackgroundTransparency = 1
+    BackgroundFrame.BorderSizePixel = 0
+    BackgroundFrame.Parent = KeyGui
+
+    -- 主容器
+    local MainContainer = Instance.new("Frame")
+    MainContainer.Size = UDim2.new(0, 480, 0, 380)
+    MainContainer.Position = UDim2.new(0.5, -240, 0.5, -190)
+    MainContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 30)
+    MainContainer.BackgroundTransparency = 0.05
+    MainContainer.BorderSizePixel = 0
+    MainContainer.Parent = BackgroundFrame
+
+    -- 玻璃态效果
+    local GlassEffect = Instance.new("Frame")
+    GlassEffect.Size = UDim2.new(1, 0, 1, 0)
+    GlassEffect.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    GlassEffect.BackgroundTransparency = 0.95
+    GlassEffect.BorderSizePixel = 0
+    GlassEffect.Parent = MainContainer
+
+    -- 圆角
+    local ContainerCorner = Instance.new("UICorner")
+    ContainerCorner.CornerRadius = UDim.new(0, 20)
+    ContainerCorner.Parent = MainContainer
+
+    -- 粉紫色边框
+    local ContainerStroke = Instance.new("UIStroke")
+    ContainerStroke.Color = Color3.fromRGB(192, 132, 252)
+    ContainerStroke.Thickness = 4
+    ContainerStroke.Transparency = 0.2
+    ContainerStroke.Parent = MainContainer
+
+    -- 动态边框渐变
+    local BorderGradient = Instance.new("UIGradient")
+    BorderGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(192, 132, 252)),
+        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(216, 180, 254)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(232, 121, 249)),
+        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(217, 70, 239)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(192, 132, 252))
+    })
+    BorderGradient.Rotation = 45
+    BorderGradient.Parent = ContainerStroke
+
+    -- 标题区域
+    local TitleFrame = Instance.new("Frame")
+    TitleFrame.Size = UDim2.new(1, 0, 0, 100)
+    TitleFrame.BackgroundTransparency = 1
+    TitleFrame.Parent = MainContainer
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Size = UDim2.new(1, 0, 0, 60)
+    TitleLabel.Position = UDim2.new(0, 0, 0, 20)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = "LOLXinQingHUB"
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextSize = 32
+    TitleLabel.Font = Enum.Font.GothamBlack
+    TitleLabel.TextStrokeTransparency = 0.8
+    TitleLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    TitleLabel.Parent = TitleFrame
+
+    -- 标题渐变
+    local TitleGradient = Instance.new("UIGradient")
+    TitleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 121, 249)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(192, 132, 252)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(217, 70, 239))
+    })
+    TitleGradient.Parent = TitleLabel
+
+    local SubtitleLabel = Instance.new("TextLabel")
+    SubtitleLabel.Size = UDim2.new(1, 0, 0, 30)
+    SubtitleLabel.Position = UDim2.new(0, 0, 0, 70)
+    SubtitleLabel.BackgroundTransparency = 1
+    SubtitleLabel.Text = "心情nb666"
+    SubtitleLabel.TextColor3 = Color3.fromRGB(200, 180, 220)
+    SubtitleLabel.TextSize = 16
+    SubtitleLabel.Font = Enum.Font.Gotham
+    SubtitleLabel.Parent = TitleFrame
+
+    -- 内容区域
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Size = UDim2.new(1, -60, 0, 200)
+    ContentFrame.Position = UDim2.new(0, 30, 0, 120)
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.Parent = MainContainer
+
+    -- 欢迎文本
+    local WelcomeLabel = Instance.new("TextLabel")
+    WelcomeLabel.Size = UDim2.new(1, 0, 0, 50)
+    WelcomeLabel.BackgroundTransparency = 1
+    WelcomeLabel.Text = "请输入卡密进行验证"
+    WelcomeLabel.TextColor3 = Color3.fromRGB(226, 232, 240)
+    WelcomeLabel.TextSize = 18
+    WelcomeLabel.Font = Enum.Font.Gotham
+    WelcomeLabel.TextWrapped = true
+    WelcomeLabel.Parent = ContentFrame
+
+    -- 卡密输入框
+    local KeyInput = Instance.new("TextBox")
+    KeyInput.Size = UDim2.new(1, 0, 0, 50)
+    KeyInput.Position = UDim2.new(0, 0, 0, 60)
+    KeyInput.BackgroundColor3 = Color3.fromRGB(40, 25, 45)
+    KeyInput.BorderSizePixel = 0
+    KeyInput.PlaceholderText = "请输入卡密..."
+    KeyInput.Text = ""
+    KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+    KeyInput.TextSize = 18
+    KeyInput.Font = Enum.Font.Gotham
+    KeyInput.PlaceholderColor3 = Color3.fromRGB(148, 163, 184)
+    KeyInput.Parent = ContentFrame
+
+    local InputCorner = Instance.new("UICorner")
+    InputCorner.CornerRadius = UDim.new(0, 12)
+    InputCorner.Parent = KeyInput
+
+    local InputStroke = Instance.new("UIStroke")
+    InputStroke.Color = Color3.fromRGB(192, 132, 252)
+    InputStroke.Thickness = 2
+    InputStroke.Transparency = 0.5
+    InputStroke.Parent = KeyInput
+
+    -- 验证按钮
+    local VerifyButton = Instance.new("TextButton")
+    VerifyButton.Size = UDim2.new(1, 0, 0, 60)
+    VerifyButton.Position = UDim2.new(0, 0, 0, 130)
+    VerifyButton.BackgroundColor3 = Color3.fromRGB(192, 132, 252)
+    VerifyButton.BorderSizePixel = 0
+    VerifyButton.Text = "验证卡密"
+    VerifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    VerifyButton.TextSize = 20
+    VerifyButton.Font = Enum.Font.GothamBold
+    VerifyButton.Parent = ContentFrame
+
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 15)
+    ButtonCorner.Parent = VerifyButton
+
+    -- 按钮渐变
+    local ButtonGradient = Instance.new("UIGradient")
+    ButtonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 121, 249)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(192, 132, 252))
+    })
+    ButtonGradient.Parent = VerifyButton
+
+    -- 状态显示
+    local StatusLabel = Instance.new("TextLabel")
+    StatusLabel.Size = UDim2.new(1, 0, 0, 40)
+    StatusLabel.Position = UDim2.new(0, 0, 0, 210)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "等待验证..."
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 180, 220)
+    StatusLabel.TextSize = 14
+    StatusLabel.Font = Enum.Font.Gotham
+    StatusLabel.Parent = ContentFrame
+
+    -- 动画效果
+    local borderTween = game:GetService("TweenService"):Create(
+        BorderGradient,
+        TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+        {Rotation = 360}
+    )
+    borderTween:Play()
+
+    local titleTween = game:GetService("TweenService"):Create(
+        TitleGradient,
+        TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true),
+        {Rotation = 360}
+    )
+    titleTween:Play()
+
+    -- 按钮交互效果
+    VerifyButton.MouseEnter:Connect(function()
+        game:GetService("TweenService"):Create(
+            VerifyButton,
+            TweenInfo.new(0.3),
+            {Size = UDim2.new(1, 10, 0, 65)}
+        ):Play()
+    end)
+
+    VerifyButton.MouseLeave:Connect(function()
+        game:GetService("TweenService"):Create(
+            VerifyButton,
+            TweenInfo.new(0.3),
+            {Size = UDim2.new(1, 0, 0, 60)}
+        ):Play()
+    end)
+
+    -- 输入框焦点效果
+    KeyInput.Focused:Connect(function()
+        game:GetService("TweenService"):Create(
+            InputStroke,
+            TweenInfo.new(0.3),
+            {Transparency = 0}
+        ):Play()
+    end)
+
+    KeyInput.FocusLost:Connect(function()
+        game:GetService("TweenService"):Create(
+            InputStroke,
+            TweenInfo.new(0.3),
+            {Transparency = 0.5}
+        ):Play()
+    end)
+
+    -- 验证功能
+    VerifyButton.MouseButton1Click:Connect(function()
+        local key = KeyInput.Text:gsub("%s+", ""):lower()
+        
+        if key == "" then
+            StatusLabel.Text = "请输入卡密"
+            StatusLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
+            return
+        end
+
+        if key == KeySystem.ValidKey then
+            KeySystem.IsVerified = true
+            
+            StatusLabel.Text = "验证成功! 正在加载..."
+            StatusLabel.TextColor3 = Color3.fromRGB(144, 238, 144)
+            
+            -- 成功动画
+            game:GetService("TweenService"):Create(
+                VerifyButton,
+                TweenInfo.new(0.5),
+                {BackgroundColor3 = Color3.fromRGB(144, 238, 144)}
+            ):Play()
+            
+            KeyInput.Text = "tomorin - 已验证"
+            KeyInput.TextEditable = false
+            VerifyButton.Visible = false
+            
+            -- 加载主脚本
+            delay(2, function()
+                game:GetService("TweenService"):Create(
+                    MainContainer,
+                    TweenInfo.new(0.8),
+                    {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}
+                ):Play()
+                delay(0.8, function()
+                    -- 移除飘雪效果
+                    RemoveSnowEffect()
+                    
+                    -- 加载WindUI并集成所有功能
+                    local success, err = pcall(function()
+                        -- 加载WindUI
+                        local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+                        
+                        WindUI.TransparencyValue = 0.1
+                        WindUI:SetTheme("Dark")
+                        
+                        -- 创建主窗口
+                        local Window = WindUI:CreateWindow({
+                            Title = "LOLXinQingHUB",
+                            Icon = "sparkles",
+                            Author = "LOLXinQingHUB",
+                            Folder = "LOLXinQingHUB",
+                            Size = UDim2.fromOffset(720, 800),
+                            Theme = "Dark",
+                            User = {
+                                Enabled = true,
+                                Anonymous = true,
+                                Callback = function()
+                                    WindUI:Notify({
+                                        Title = "欢迎使用",
+                                        Content = "LOLXinQingHUB",
+                                        Duration = 5
+                                    })
+                                end
+                            },
+                            SideBarWidth = 220,
+                            ScrollBarEnabled = true
+                        })
+
+                        Window:Tag({
+                            Title = "BETA",
+                            Color = Color3.fromHex("#E879F9")
+                        })
+                        Window:Tag({
+                            Title = "已验证",
+                            Color = Color3.fromHex("#C084FC")
+                        })
+
+                        -- 主题切换按钮
+                        Window:CreateTopbarButton("theme-switcher", "moon", function()
+                            WindUI:SetTheme(WindUI:GetCurrentTheme() == "Dark" and "Light" or "Dark")
+                            WindUI:Notify({
+                                Title = "主题已切换",
+                                Content = "当前主题: "..WindUI:GetCurrentTheme(),
+                                Duration = 2
+                            })
+                        end, 990)
+
+                        -- ===============================
+                        -- 高松灯生日快乐
+                        -- ===============================
+                        local AdvancedSection = Window:Section({ Title = "功能", Opened = true })
+                        local AdvancedTab = AdvancedSection:Tab({ Title = "游戏功能", Icon = "zap" })
+
+                        AdvancedTab:Paragraph({
+                            Title = "高级功能",
+                            Desc = "高松灯",
+                            Image = "zap",
+                            ImageSize = 24,
+                            Color = "White",
+                        })
+
+                        AdvancedTab:Divider()
+
+                        -- 初始化功能系统
+                        local espSystem = AddESP()
+                        local godModeSystem = AddGodMode()
+
+                        -- 透视功能开关
+                        local espEnabled = false
+                        AdvancedTab:Toggle({
+                            Title = "透视功能",
+                            Desc = "显示玩家位置和名称",
+                            Value = false,
+                            Callback = function(value)
+                                espEnabled = espSystem.Toggle()
+                                WindUI:Notify({
+                                    Title = "透视功能",
+                                    Content = espEnabled and "已开启" or "已关闭",
+                                    Icon = espEnabled and "check" or "x",
+                                    Duration = 3
+                                })
+                            end
+                        })
+
+                        -- 无敌模式开关
+                        local godModeEnabled = false
+                        AdvancedTab:Toggle({
+                            Title = "无敌模式",
+                            Desc = "免疫伤害，无限生命值",
+                            Value = false,
+                            Callback = function(value)
+                                godModeEnabled = godModeSystem.Toggle()
+                                WindUI:Notify({
+                                    Title = "无敌模式",
+                                    Content = godModeEnabled and "已开启" or "已关闭",
+                                    Icon = godModeEnabled and "check" or "x",
+                                    Duration = 3
+                                })
+                            end
+                        })
+
+                        AdvancedTab:Divider()
+
+                        -- 功能状态显示
+                        AdvancedTab:Button({
+                            Title = "检查功能状态",
+                            Icon = "info",
+                            Callback = function()
+                                local espStatus = espSystem.IsEnabled() and "开启" or "关闭"
+                                local godModeStatus = godModeSystem.IsEnabled() and "开启" or "关闭"
+                                
+                                WindUI:Notify({
+                                    Title = "功能状态",
+                                    Content = string.format("透视: %s\n无敌模式: %s", espStatus, godModeStatus),
+                                    Icon = "info",
+                                    Duration = 5
+                                })
+                            end
+                        })
+
+                        -- ===============================
+                        -- 高松灯生日快乐
+                        -- ===============================
+                        local ScriptsSection = Window:Section({ Title = "LOL汉化", Opened = true })
+                        local ScriptsTab = ScriptsSection:Tab({ Title = "神秘功能", Icon = "gamepad-2" })
+
+                        ScriptsTab:Paragraph({
+                            Title = "LOLXinQingHUB ",
+                            Desc = "精选优质游戏脚本，一键加载使用",
+                            Image = "zap",
+                            ImageSize = 24,
+                            Color = "White",
+                        })
+
+                        ScriptsTab:Divider()
+
+                        local originalScripts = {
+                            {
+                                Title = "Fartsaken被遗弃",
+                                Icon = "play",
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Fartsaken-LOL-QQ737561425"
+                            },
+                            {
+                                Title = "BronxWare 99 Nights汉化",
+                                Icon = "play", 
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/BronxWare99Nights-LOL"
+                            },
+                            {
+                                Title = "Doors XA Hub",
+                                Icon = "play",
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/DoorsXAHubLOL"
+                            },
+                            {
+                                Title = "住宅大屠杀",
+                                Icon = "play",
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/LOLHANHUA"
+                            },
+                            {
+                                Title = "Red Hub(死亡之死LOL汉化)",
+                                Icon = "play",
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/Death%20is%20die"
+                            },
+                            {
+                                Title = "UNDETECTEDWARE犯罪(半汉化)",
+                                Icon = "play",
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/UNDETECTEDWARE-LOLHAZNHUA"
+                            },
+                            {
+                                Title = "甩飞功能",
+                                Icon = "zap",
+                                URL = "https://raw.githubusercontent.com/0Ben1/fe./main/Fling%20GUI"
+                            },
+                            {
+                                Title = "无敌少侠飞行r15",
+                                Icon = "shield",
+                                URL = "https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/invincible-FLY"
+                            }
+                        }
+
+                        for _, scriptInfo in ipairs(originalScripts) do
+                            ScriptsTab:Button({
+                                Title = scriptInfo.Title,
+                                Icon = scriptInfo.Icon,
+                                Callback = function()
+                                    local success, result = pcall(function()
+                                        loadstring(game:HttpGet(scriptInfo.URL))()
+                                    end)
+                                    
+                                    if success then
+                                        WindUI:Notify({
+                                            Title = "🎯 脚本加载成功",
+                                            Content = scriptInfo.Title .. " 已加载",
+                                            Icon = "check",
+                                            Duration = 3
+                                        })
+                                    else
+                                        WindUI:Notify({
+                                            Title = "❌ 加载失败",
+                                            Content = "请检查网络连接或脚本链接",
+                                            Icon = "x",
+                                            Duration = 3
+                                        })
+                                        warn("脚本加载错误: " .. tostring(result))
+                                    end
+                                end
+                            })
+                        end
+
+                        -- ===============================
+                        -- LOL核心功能 - 保留所有原始功能
+                        -- ===============================
+                        local LOLSection = Window:Section({ Title = "⚡ LOL核心功能", Opened = true })
+                        local LOLTab = LOLSection:Tab({ Title = "核心功能", Icon = "zap" })
+
+                        LOLTab:Paragraph({
+                            Title = "LOL核心功能",
+                            Desc = "汉化飞行、LOL回溯时间等核心功能",
+                            Image = "zap",
+                            ImageSize = 24,
+                            Color = "White",
+                        })
+
+                        LOLTab:Divider()
+
+                        -- 汉化飞行
+                        LOLTab:Button({
+                            Title = "汉化飞行",
+                            Icon = "feather",
+                            Callback = function()
+                                local success, result = pcall(function()
+                                    loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E6%B1%89%E5%8C%96%E9%A3%9E%E8%A1%8C"))()
+                                end)
+                                
+                                if success then
+                                    WindUI:Notify({
+                                        Title = "🚀 汉化飞行已加载",
+                                        Content = "飞行功能已激活",
+                                        Icon = "check",
+                                        Duration = 3
+                                    })
+                                else
+                                    WindUI:Notify({
+                                        Title = "❌ 加载失败",
+                                        Content = "请检查网络连接",
+                                        Icon = "x",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        -- LOL回溯时间
+                        LOLTab:Button({
+                            Title = "LOL回溯时间",
+                            Icon = "rewind",
+                            Callback = function()
+                                local success, result = pcall(function()
+                                    loadstring(game:HttpGet("https://raw.githubusercontent.com/useert741/-X---byLOL/refs/heads/main/%E5%9B%9E%E6%BA%AF%E6%97%B6%E9%97%B4LOL"))()
+                                end)
+                                
+                                if success then
+                                    WindUI:Notify({
+                                        Title = "⏰ LOL回溯时间已加载",
+                                        Content = "时间回溯功能已激活",
+                                        Icon = "check",
+                                        Duration = 3
+                                    })
+                                else
+                                    WindUI:Notify({
+                                        Title = "❌ 加载失败",
+                                        Content = "请检查网络连接",
+                                        Icon = "x",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        -- ===============================
+                        -- 玩家功能 - 保留所有原始功能
+                        -- ===============================
+                        local PlayerSection = Window:Section({ Title = "👤 玩家功能", Opened = true })
+                        local PlayerTab = PlayerSection:Tab({ Title = "基础属性", Icon = "user" })
+
+                        PlayerTab:Paragraph({
+                            Title = "玩家属性调整",
+                            Desc = "调整玩家基础属性和能力",
+                            Image = "user",
+                            ImageSize = 24,
+                            Color = "White",
+                        })
+
+                        PlayerTab:Divider()
+
+                        -- 移动速度调整
+                        local speedValue = 16
+                        PlayerTab:Slider({
+                            Title = "移动速度",
+                            Desc = "调整玩家移动速度",
+                            Value = { Min = 0, Max = 200, Default = 16 },
+                            Callback = function(value)
+                                speedValue = value
+                                local character = game.Players.LocalPlayer.Character
+                                if character and character:FindFirstChild("Humanoid") then
+                                    character.Humanoid.WalkSpeed = value
+                                end
+                            end
+                        })
+
+                        -- 跳跃高度调整
+                        local jumpValue = 50
+                        PlayerTab:Slider({
+                            Title = "跳跃高度",
+                            Desc = "调整玩家跳跃高度",
+                            Value = { Min = 0, Max = 200, Default = 50 },
+                            Callback = function(value)
+                                jumpValue = value
+                                local character = game.Players.LocalPlayer.Character
+                                if character and character:FindFirstChild("Humanoid") then
+                                    character.Humanoid.JumpPower = value
+                                end
+                            end
+                        })
+
+                        -- 重力调整
+                        PlayerTab:Slider({
+                            Title = "重力调整",
+                            Desc = "调整游戏世界重力",
+                            Value = { Min = 0, Max = 500, Default = 196.2 },
+                            Callback = function(value)
+                                workspace.Gravity = value
+                            end
+                        })
+
+                        PlayerTab:Divider()
+
+                        -- 生命值设置
+                        local healthValue = 100
+                        PlayerTab:Input({
+                            Title = "生命值设置",
+                            Desc = "设置玩家当前生命值",
+                            Value = "100",
+                            Callback = function(value)
+                                healthValue = tonumber(value) or 100
+                            end
+                        })
+
+                        PlayerTab:Button({
+                            Title = "应用生命值",
+                            Icon = "heart",
+                            Callback = function()
+                                local character = game.Players.LocalPlayer.Character
+                                if character and character:FindFirstChild("Humanoid") then
+                                    character.Humanoid.Health = healthValue
+                                    WindUI:Notify({
+                                        Title = "生命值已设置",
+                                        Content = "生命值: " .. healthValue,
+                                        Icon = "check",
+                                        Duration = 3
+                                    })
+                                else
+                                    WindUI:Notify({
+                                        Title = "错误",
+                                        Content = "找不到角色或Humanoid",
+                                        Icon = "x",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        -- ===============================
+                        -- 移动功能 - 保留所有原始功能
+                        -- ===============================
+                        local MoveTab = PlayerSection:Tab({ Title = "移动功能", Icon = "navigation" })
+
+                        MoveTab:Paragraph({
+                            Title = "高级移动功能",
+                            Desc = "解锁各种移动能力",
+                            Image = "navigation",
+                            ImageSize = 24,
+                            Color = "White",
+                        })
+
+                        MoveTab:Divider()
+
+                        -- 穿墙模式
+                        local noclipEnabled = false
+                        local noclipConnection
+
+                        MoveTab:Toggle({
+                            Title = "穿墙模式",
+                            Desc = "启用/禁用穿墙功能",
+                            Value = false,
+                            Callback = function(value)
+                                noclipEnabled = value
+                                
+                                if value then
+                                    WindUI:Notify({
+                                        Title = "穿墙已启用",
+                                        Content = "现在可以穿过墙壁",
+                                        Icon = "git-merge",
+                                        Duration = 3
+                                    })
+                                    
+                                    -- 穿墙逻辑
+                                    noclipConnection = game:GetService("RunService").Stepped:Connect(function()
+                                        if noclipEnabled then
+                                            local character = game.Players.LocalPlayer.Character
+                                            if character then
+                                                for _, part in pairs(character:GetDescendants()) do
+                                                    if part:IsA("BasePart") then
+                                                        part.CanCollide = false
+                                                    end
+                                                end
+                                            end
+                                        else
+                                            if noclipConnection then
+                                                noclipConnection:Disconnect()
+                                            end
+                                        end
+                                    end)
+                                else
+                                    if noclipConnection then
+                                        noclipConnection:Disconnect()
+                                    end
+                                    WindUI:Notify({
+                                        Title = "穿墙已禁用",
+                                        Content = "碰撞检测已恢复",
+                                        Icon = "git-merge",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        -- 无限跳跃
+                        local infiniteJumpEnabled = false
+                        local jumpConnection
+
+                        MoveTab:Toggle({
+                            Title = "无限跳跃",
+                            Desc = "启用/禁用无限跳跃",
+                            Value = false,
+                            Callback = function(value)
+                                infiniteJumpEnabled = value
+                                
+                                if value then
+                                    WindUI:Notify({
+                                        Title = "无限跳跃已启用",
+                                        Content = "现在可以无限跳跃",
+                                        Icon = "wind",
+                                        Duration = 3
+                                    })
+                                    
+                                    jumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                                        if infiniteJumpEnabled then
+                                            local character = game.Players.LocalPlayer.Character
+                                            if character and character:FindFirstChildOfClass("Humanoid") then
+                                                character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+                                            end
+                                        end
+                                    end)
+                                else
+                                    if jumpConnection then
+                                        jumpConnection:Disconnect()
+                                    end
+                                    WindUI:Notify({
+                                        Title = "无限跳跃已禁用",
+                                        Content = "跳跃恢复正常",
+                                        Icon = "wind",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        MoveTab:Divider()
+
+                        -- 点击传送
+                        MoveTab:Button({
+                            Title = "点击传送",
+                            Icon = "map-pin",
+                            Callback = function()
+                                local mouse = game.Players.LocalPlayer:GetMouse()
+                                local tool = Instance.new("Tool")
+                                tool.RequiresHandle = false
+                                tool.Name = "点击传送工具"
+                                tool.Activated:Connect(function()
+                                    local pos = mouse.Hit + Vector3.new(0, 3, 0)
+                                    local character = game.Players.LocalPlayer.Character
+                                    if character and character:FindFirstChild("HumanoidRootPart") then
+                                        character.HumanoidRootPart.CFrame = CFrame.new(pos.X, pos.Y, pos.Z)
+                                    end
+                                end)
+                                tool.Parent = game.Players.LocalPlayer.Backpack
+                                
+                                WindUI:Notify({
+                                    Title = "传送工具已添加",
+                                    Content = "请在背包中使用传送工具",
+                                    Icon = "map-pin",
+                                    Duration = 3
+                                })
+                            end
+                        })
+
+                        -- ===============================
+                        -- 工具功能 - 保留所有原始功能
+                        -- ===============================
+                        local ToolsTab = PlayerSection:Tab({ Title = "🛠️ 工具功能", Icon = "tool" })
+
+                        ToolsTab:Paragraph({
+                            Title = "实用工具",
+                            Desc = "各种辅助工具和功能",
+                            Image = "tool",
+                            ImageSize = 24,
+                            Color = "White",
+                        })
+
+                        ToolsTab:Divider()
+
+                        -- 反AFK功能
+                        local antiAFKEnabled = false
+                        ToolsTab:Toggle({
+                            Title = "反AFK检测",
+                            Desc = "防止被系统踢出游戏",
+                            Value = false,
+                            Callback = function(value)
+                                antiAFKEnabled = value
+                                if value then
+                                    WindUI:Notify({
+                                        Title = "🛡️ 反AFK已启用",
+                                        Content = "AFK检测已被绕过",
+                                        Icon = "check",
+                                        Duration = 3
+                                    })
+                                    
+                                    local virtualUser = game:GetService("VirtualUser")
+                                    game:GetService("Players").LocalPlayer.Idled:Connect(function()
+                                        if antiAFKEnabled then
+                                            virtualUser:CaptureController()
+                                            virtualUser:ClickButton2(Vector2.new())
+                                        end
+                                    end)
+                                else
+                                    WindUI:Notify({
+                                        Title = "🛡️ 反AFK已禁用",
+                                        Content = "AFK检测已恢复",
+                                        Icon = "x",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        ToolsTab:Divider()
+
+                        -- 服务器信息
+                        ToolsTab:Button({
+                            Title = "服务器信息",
+                            Icon = "server",
+                            Callback = function()
+                                local players = game.Players:GetPlayers()
+                                local playerCount = #players
+                                local maxPlayers = game.Players.MaxPlayers
+                                local placeId = game.PlaceId
+                                
+                                WindUI:Notify({
+                                    Title = "🌐 服务器信息",
+                                    Content = string.format("玩家: %d/%d\n地图ID: %d", playerCount, maxPlayers, placeId),
+                                    Icon = "server",
+                                    Duration = 5
+                                })
+                            end
+                        })
+
+                        -- 复制游戏ID
+                        ToolsTab:Button({
+                            Title = "复制游戏ID",
+                            Icon = "copy",
+                            Callback = function()
+                                local placeId = tostring(game.PlaceId)
+                                setclipboard(placeId)
+                                WindUI:Notify({
+                                    Title = "📋 游戏ID已复制",
+                                    Content = "游戏ID: " .. placeId,
+                                    Icon = "check",
+                                    Duration = 3
+                                })
+                            end
+                        })
+
+                        -- 重置角色
+                        ToolsTab:Button({
+                            Title = "重置角色",
+                            Icon = "refresh-cw",
+                            Variant = "Secondary",
+                            Callback = function()
+                                local character = game.Players.LocalPlayer.Character
+                                if character then
+                                    character:BreakJoints()
+                                    WindUI:Notify({
+                                        Title = "🔄 角色已重置",
+                                        Content = "角色正在重新生成",
+                                        Icon = "check",
+                                        Duration = 3
+                                    })
+                                end
+                            end
+                        })
+
+                        -- 重置所有设置
+                        ToolsTab:Button({
+                            Title = "重置所有设置",
+                            Icon = "trash-2",
+                            Variant = "Destructive",
+                            Callback = function()
+                                -- 重置速度
+                                speedValue = 16
+                                local character = game.Players.LocalPlayer.Character
+                                if character and character:FindFirstChild("Humanoid") then
+                                    character.Humanoid.WalkSpeed = 16
+                                end
+                                
+                                -- 重置跳跃
+                                jumpValue = 50
+                                if character and character:FindFirstChild("Humanoid") then
+                                    character.Humanoid.JumpPower = 50
+                                end
+                                
+                                -- 重置重力
+                                workspace.Gravity = 196.2
+                                
+                                -- 禁用功能
+                                noclipEnabled = false
+                                if noclipConnection then
+                                    noclipConnection:Disconnect()
+                                end
+                                
+                                infiniteJumpEnabled = false
+                                if jumpConnection then
+                                    jumpConnection:Disconnect()
+                                end
+                                
+                                antiAFKEnabled = false
+                                
+                                -- 关闭透视和无敌模式
+                                if espSystem then
+                                    espSystem.Toggle()
+                                end
+                                if godModeSystem then
+                                    godModeSystem.Toggle()
+                                end
+                                
+                                WindUI:Notify({
+                                    Title = "重置完成",
+                                    Content = "所有设置已恢复默认值",
+                                    Icon = "check",
+                                    Duration = 3
+                                })
+                            end
+                        })
+
+                        -- ===============================
+                        -- UI设置 - 保留所有原始功能
+                        -- ===============================
+                        local SettingsSection = Window:Section({ Title = "设置", Opened = false })
+                        local SettingsTab = SettingsSection:Tab({ Title = "UI设置", Icon = "settings" })
+
+                        -- UI透明度
+                        SettingsTab:Slider({
+                            Title = "UI透明度",
+                            Desc = "调整界面透明度",
+                            Value = { Min = 0, Max = 1, Default = 0.1 },
+                            Callback = function(value)
+                                WindUI.TransparencyValue = value
+                            end
+                        })
+
+                        -- 自动保存
+                        local autoSaveEnabled = false
+                        SettingsTab:Toggle({
+                            Title = "自动保存设置",
+                            Desc = "自动保存您的配置",
+                            Value = false,
+                            Callback = function(value)
+                                autoSaveEnabled = value
+                                WindUI:Notify({
+                                    Title = "自动保存",
+                                    Content = value and "已启用" or "已禁用",
+                                    Duration = 2
+                                })
+                            end
+                        })
+
+                        -- 性能模式
+                        local performanceMode = false
+                        SettingsTab:Toggle({
+                            Title = "性能模式",
+                            Desc = "降低特效提高性能",
+                            Value = false,
+                            Callback = function(value)
+                                performanceMode = value
+                                WindUI:Notify({
+                                    Title = "性能模式",
+                                    Content = value and "已启用" or "已禁用",
+                                    Duration = 2
+                                })
+                            end
+                        })
+
+                        -- 初始化完成提示
+                        WindUI:Notify({
+                            Title = "🎉 LOLXinQingHUB 加载完成",
+                            Content = "所有功能已就绪，包含透视和无敌模式！",
+                            Icon = "check",
+                            Duration = 5
+                        })
+
+                        -- 欢迎消息
+                        delay(2, function()
+                            WindUI:Popup({
+                                Title = "欢迎使用 LOLXinQingHUB ✨",
+                                Icon = "sparkles",
+                                Content = "感谢您选择LOLXinQingHUB 粉紫豪华版本\n\n✨ 特色功能:\n• 透视功能\n• 无敌模式\n• 精选游戏脚本\n• 高级玩家功能\n• 实用工具集\n• 完整WindUI界面",
+                                Buttons = {
+                                    {
+                                        Title = "开始探索",
+                                        Icon = "rocket",
+                                        Variant = "Primary",
+                                        Callback = function() end
+                                    }
+                                }
+                            })
+                        end)
+                    end)
+
+                    if not success then
+                        warn("WindUI加载错误: " .. err)
+                        game:GetService("StarterGui"):SetCore("SendNotification", {
+                            Title = "LOLXinQingHUB 错误",
+                            Text = "WindUI加载失败: " .. tostring(err),
+                            Duration = 5
+                        })
+                    end
+                    
+                    KeyGui:Destroy()
+                end)
+            end)
+        else
+            StatusLabel.Text = "卡密无效，请重试"
+            StatusLabel.TextColor3 = Color3.fromRGB(248, 113, 113)
+            
+            -- 错误震动效果
+            for i = 1, 3 do
+                game:GetService("TweenService"):Create(
+                    MainContainer,
+                    TweenInfo.new(0.05),
+                    {Position = UDim2.new(0.5, -240 + 5, 0.5, -190)}
+                ):Play()
+                wait(0.05)
+                game:GetService("TweenService"):Create(
+                    MainContainer,
+                    TweenInfo.new(0.05),
+                    {Position = UDim2.new(0.5, -240 - 5, 0.5, -190)}
+                ):Play()
+                wait(0.05)
+            end
+            game:GetService("TweenService"):Create(
+                MainContainer,
+                TweenInfo.new(0.1),
+                {Position = UDim2.new(0.5, -240, 0.5, -190)}
+            ):Play()
+        end
+    end)
+
+    -- 回车键验证
+    KeyInput.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            VerifyButton.MouseButton1Click()
+        end
+    end)
+
+    KeyGui.Parent = game:GetService("CoreGui")
+    return KeyGui
+end
+
+-- 安全执行主函数
+local success, err = pcall(function()
+    CreateKeySystem()
+end)
+
+if not success then
+    warn("LOLXinQingHUB加载错误: " .. err)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "LOLXinQingHUB 错误",
+        Text = "加载失败: " .. tostring(err),
+        Duration = 5
+    })
+end nn
+
+-- 提供手动关闭飘雪的函数
+getgenv().RemoveSnow = RemoveSnowEffect
