@@ -1,0 +1,1753 @@
+--[[
+    CDX UI Framework - Universal Version
+    
+    Author: LOL
+    Keybind: Left Alt to open/close
+    Platform: Mobile & PC Support
+]]
+
+-- 加載 Compkiller 庫
+local Compkiller = loadstring(game:HttpGet("https://raw.githubusercontent.com/4lpaca-pin/CompKiller/refs/heads/main/src/source.luau"))();
+
+-- 創建通知系統
+local Notifier = Compkiller.newNotify();
+
+-- 配置管理器
+local ConfigManager = Compkiller:ConfigManager({
+    Directory = "CDX-UI",
+    Config = "CDX-Config"
+});
+
+-- 檢測設備類型
+local UserInputService = game:GetService("UserInputService")
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled
+local isPC = UserInputService.KeyboardEnabled and UserInputService.MouseEnabled and not UserInputService.TouchEnabled
+local deviceType = isMobile and "Mobile" or isPC and "PC" or "Unknown"
+
+print("設備檢測: " .. deviceType)
+
+-- 根據設備類型調整設置
+local scaleSetting = Compkiller.Scale.Auto
+local textSizeSetting = isMobile and 18 or 15
+local loadTime = isMobile and 1.5 or 2.5
+
+-- 加載界面
+Compkiller:Loader("rbxassetid://120245531583106", loadTime).yield();
+
+-- 創建主窗口
+local Window = Compkiller.new({
+    Name = "CDX",
+    Keybind = "LeftAlt",
+    Logo = "rbxassetid://120245531583106",
+    Scale = scaleSetting,
+    TextSize = textSizeSetting,
+});
+
+-- 歡迎通知
+Notifier.new({
+    Title = "CDX",
+    Content = "CDX已加載 (" .. deviceType .. ")",
+    Duration = isMobile and 3 or 5,
+    Icon = "rbxassetid://120245531583106"
+});
+
+-- ==================== 人數顯示系統 (懸浮窗外) ====================
+-- 創建獨立的人數顯示UI
+local PlayerCountDisplay = Instance.new("ScreenGui")
+PlayerCountDisplay.Name = "CDX_PlayerCount"
+PlayerCountDisplay.ResetOnSpawn = false
+PlayerCountDisplay.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+PlayerCountDisplay.DisplayOrder = 9999  -- 確保在最前面
+
+-- 玩家總數顯示
+local TotalPlayersFrame = Instance.new("Frame")
+TotalPlayersFrame.Name = "TotalPlayers"
+TotalPlayersFrame.Size = UDim2.new(0, 60, 0, 30)
+TotalPlayersFrame.Position = UDim2.new(1, -70, 0, 10)  -- 右上角
+TotalPlayersFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TotalPlayersFrame.BackgroundTransparency = 0.3
+TotalPlayersFrame.BorderSizePixel = 0
+TotalPlayersFrame.AnchorPoint = Vector2.new(1, 0)
+
+local TotalPlayersLabel = Instance.new("TextLabel")
+TotalPlayersLabel.Name = "TotalLabel"
+TotalPlayersLabel.Size = UDim2.new(1, 0, 1, 0)
+TotalPlayersLabel.BackgroundTransparency = 1
+TotalPlayersLabel.Text = "0"
+TotalPlayersLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TotalPlayersLabel.TextSize = 20
+TotalPlayersLabel.Font = Enum.Font.GothamBold
+TotalPlayersLabel.TextStrokeTransparency = 0
+TotalPlayersLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+TotalPlayersLabel.Parent = TotalPlayersFrame
+
+-- 敵人數量顯示
+local EnemyCountFrame = Instance.new("Frame")
+EnemyCountFrame.Name = "EnemyCount"
+EnemyCountFrame.Size = UDim2.new(0, 60, 0, 30)
+EnemyCountFrame.Position = UDim2.new(1, -70, 0, 50)  -- 總數顯示下方
+EnemyCountFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+EnemyCountFrame.BackgroundTransparency = 0.3
+EnemyCountFrame.BorderSizePixel = 0
+EnemyCountFrame.AnchorPoint = Vector2.new(1, 0)
+
+local EnemyCountLabel = Instance.new("TextLabel")
+EnemyCountLabel.Name = "EnemyLabel"
+EnemyCountLabel.Size = UDim2.new(1, 0, 1, 0)
+EnemyCountLabel.BackgroundTransparency = 1
+EnemyCountLabel.Text = "0"
+EnemyCountLabel.TextColor3 = Color3.fromRGB(255, 50, 50)  -- 紅色
+EnemyCountLabel.TextSize = 20
+EnemyCountLabel.Font = Enum.Font.GothamBold
+EnemyCountLabel.TextStrokeTransparency = 0
+EnemyCountLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+EnemyCountLabel.Parent = EnemyCountFrame
+
+-- 隊友數量顯示
+local TeammateCountFrame = Instance.new("Frame")
+TeammateCountFrame.Name = "TeammateCount"
+TeammateCountFrame.Size = UDim2.new(0, 60, 0, 30)
+TeammateCountFrame.Position = UDim2.new(1, -70, 0, 90)  -- 敵人顯示下方
+TeammateCountFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+TeammateCountFrame.BackgroundTransparency = 0.3
+TeammateCountFrame.BorderSizePixel = 0
+TeammateCountFrame.AnchorPoint = Vector2.new(1, 0)
+
+local TeammateCountLabel = Instance.new("TextLabel")
+TeammateCountLabel.Name = "TeammateLabel"
+TeammateCountLabel.Size = UDim2.new(1, 0, 1, 0)
+TeammateCountLabel.BackgroundTransparency = 1
+TeammateCountLabel.Text = "0"
+TeammateCountLabel.TextColor3 = Color3.fromRGB(50, 255, 50)  -- 綠色
+TeammateCountLabel.TextSize = 20
+TeammateCountLabel.Font = Enum.Font.GothamBold
+TeammateCountLabel.TextStrokeTransparency = 0
+TeammateCountLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+TeammateCountLabel.Parent = TeammateCountFrame
+
+-- 將所有框架添加到顯示器
+TotalPlayersFrame.Parent = PlayerCountDisplay
+EnemyCountFrame.Parent = PlayerCountDisplay
+TeammateCountFrame.Parent = PlayerCountDisplay
+PlayerCountDisplay.Parent = game:GetService("CoreGui")
+
+-- 更新人數顯示
+function UpdatePlayerCounts()
+    local players = game:GetService("Players"):GetPlayers()
+    local localPlayer = game:GetService("Players").LocalPlayer
+    local totalPlayers = #players
+    local enemyCount = 0
+    local teammateCount = 0
+    
+    for _, player in pairs(players) do
+        if player ~= localPlayer then
+            if player.Team and localPlayer.Team then
+                if player.Team == localPlayer.Team then
+                    teammateCount = teammateCount + 1
+                else
+                    enemyCount = enemyCount + 1
+                end
+            else
+                enemyCount = enemyCount + 1
+            end
+        end
+    end
+    
+    -- 更新數字顯示
+    TotalPlayersLabel.Text = tostring(totalPlayers)
+    EnemyCountLabel.Text = tostring(enemyCount)
+    TeammateCountLabel.Text = tostring(teammateCount)
+end
+
+-- 定時更新人數
+task.spawn(function()
+    while true do
+        task.wait(1)  -- 每1秒更新一次
+        UpdatePlayerCounts()
+    end
+end)
+
+-- 監聽玩家加入/離開
+game:GetService("Players").PlayerAdded:Connect(function(player)
+    UpdatePlayerCounts()
+end)
+
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    UpdatePlayerCounts()
+end)
+
+-- 監聽隊伍變化
+game:GetService("Players").LocalPlayer:GetPropertyChangedSignal("Team"):Connect(function()
+    UpdatePlayerCounts()
+end)
+
+-- 初始更新人數顯示
+task.spawn(function()
+    task.wait(1)
+    UpdatePlayerCounts()
+end)
+
+-- 水印（只顯示作者信息）
+local Watermark = Window:Watermark();
+Watermark:AddText({
+    Icon = "user",
+    Text = "LOL",
+});
+
+-- 創建主頁標籤頁
+Window:DrawCategory({
+    Name = "主要"
+});
+
+local HomeTab = Window:DrawTab({
+    Name = "主頁",
+    Icon = "home",
+    EnableScrolling = true
+});
+
+-- 左側欄：信息
+local InfoSection = HomeTab:DrawSection({
+    Name = "信息",
+    Position = 'left'
+});
+
+InfoSection:AddParagraph({
+    Title = "作者",
+    Content = "LOL"
+});
+
+InfoSection:AddParagraph({
+    Title = "合作者",
+    Content = "心情"
+});
+
+InfoSection:AddParagraph({
+    Title = "目前狀態",
+    Content = "Dev"
+});
+
+-- 人數統計顯示區域
+local StatsSection = HomeTab:DrawSection({
+    Name = "遊戲統計",
+    Position = 'right'
+});
+
+StatsSection:AddParagraph({
+    Title = "在線玩家",
+    Content = "數字顯示在屏幕右上角"
+});
+
+StatsSection:AddParagraph({
+    Title = "敵人數量",
+    Content = "紅色數字 - 右上角"
+});
+
+StatsSection:AddParagraph({
+    Title = "隊友數量",
+    Content = "綠色數字 - 右上角"
+});
+
+-- 創建通用標籤頁
+Window:DrawCategory({
+    Name = "功能"
+});
+
+local GeneralTab = Window:DrawTab({
+    Name = "通用",
+    Icon = "settings",
+    EnableScrolling = true
+});
+
+-- 設定變量
+local SpeedEnabled = false
+local SpeedMultiplier = 2
+local JumpEnabled = false
+local JumpPower = 50
+local FOVEnabled = false
+local FOVValue = 70
+local WideAngleEnabled = false
+local WideAngleValue = 90
+local DefaultFOV = 70  -- 默認視野值
+
+-- 保存原始值
+local OriginalWalkSpeed = 16
+local OriginalJumpPower = 50
+local OriginalFOV = DefaultFOV
+
+-- 通用左側欄
+local GeneralLeftSection = GeneralTab:DrawSection({
+    Name = "玩家設定",
+    Position = 'left'
+});
+
+-- 玩家速度設定
+local SpeedToggle = GeneralLeftSection:AddToggle({
+    Name = "修改玩家速度",
+    Flag = "PlayerSpeed_Toggle",
+    Default = false,
+    Callback = function(state)
+        SpeedEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "玩家速度修改已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "玩家速度修改已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ResetSpeed()
+        end
+    end,
+});
+
+local SpeedSlider = GeneralLeftSection:AddSlider({
+    Name = "速度倍率",
+    Min = 1,
+    Max = 10,
+    Default = 2,
+    Round = 1,
+    Flag = "PlayerSpeed_Slider",
+    Callback = function(value)
+        SpeedMultiplier = value
+        print("玩家速度倍率設定為: " .. value .. "x")
+        if SpeedEnabled then
+            ApplySpeed()
+        end
+    end
+});
+
+-- 跳躍高度設定
+local JumpToggle = GeneralLeftSection:AddToggle({
+    Name = "修改跳躍高度",
+    Flag = "JumpHeight_Toggle",
+    Default = false,
+    Callback = function(state)
+        JumpEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "跳躍高度修改已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "跳躍高度修改已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ResetJump()
+        end
+    end,
+});
+
+local JumpSlider = GeneralLeftSection:AddSlider({
+    Name = "跳躍高度",
+    Min = 20,
+    Max = 200,
+    Default = 50,
+    Round = 0,
+    Flag = "JumpHeight_Slider",
+    Callback = function(value)
+        JumpPower = value
+        print("跳躍高度設定為: " .. value)
+        if JumpEnabled then
+            ApplyJump()
+        end
+    end
+});
+
+-- 通用右側欄
+local GeneralRightSection = GeneralTab:DrawSection({
+    Name = "視覺設定",
+    Position = 'right'
+});
+
+-- 視野距離設定
+local FOVToggle = GeneralRightSection:AddToggle({
+    Name = "修改視野距離",
+    Flag = "FOV_Toggle",
+    Default = false,
+    Callback = function(state)
+        FOVEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "視野距離修改已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "視野距離修改已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        end
+        ApplyFOV()
+    end,
+});
+
+local FOVSlider = GeneralRightSection:AddSlider({
+    Name = "視野距離 (FOV)",
+    Min = 50,
+    Max = 120,
+    Default = 70,
+    Round = 0,
+    Flag = "FOV_Slider",
+    Callback = function(value)
+        FOVValue = value
+        print("視野距離設定為: " .. value)
+        if FOVEnabled then
+            ApplyFOV()
+        end
+    end
+});
+
+-- 廣角設定
+local WideAngleToggle = GeneralRightSection:AddToggle({
+    Name = "修改廣角",
+    Flag = "WideAngle_Toggle",
+    Default = false,
+    Callback = function(state)
+        WideAngleEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "廣角修改已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "廣角修改已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        end
+        ApplyWideAngle()
+    end,
+});
+
+local WideAngleSlider = GeneralRightSection:AddSlider({
+    Name = "廣角度數",
+    Min = 70,
+    Max = 130,
+    Default = 90,
+    Round = 0,
+    Flag = "WideAngle_Slider",
+    Callback = function(value)
+        WideAngleValue = value
+        print("廣角度數設定為: " .. value)
+        if WideAngleEnabled then
+            ApplyWideAngle()
+        end
+    end
+});
+
+-- 添加說明
+GeneralRightSection:AddParagraph({
+    Title = "使用說明",
+    Content = "啟用開關後可調整對應數值\n設定會自動保存"
+});
+
+-- ==================== 創建ESP標籤頁 ====================
+Window:DrawCategory({
+    Name = "視覺"
+});
+
+local EspTab = Window:DrawTab({
+    Name = "ESP透視",
+    Icon = "eye",
+    EnableScrolling = true
+});
+
+-- ESP核心變量
+local EspEnabled = false
+local PlayerEspEnabled = false
+local EnemyEspEnabled = false
+local NpcEspEnabled = false
+local ItemEspEnabled = false
+local Box3DEspEnabled = false
+local DotEspEnabled = false  -- 小圓點顯示
+local AimbotEnabled = false  -- 自瞄功能
+
+-- ESP存儲
+local EspObjects = {}
+local EspHighlights = {}
+local EspBillboards = {}
+local EspDots = {}  -- 小圓點存儲
+local EspConnection = nil
+
+-- 顏色定義
+local PlayerColor = Color3.fromRGB(0, 255, 0)  -- 綠色
+local EnemyColor = Color3.fromRGB(255, 0, 0)   -- 紅色
+local NpcColor = Color3.fromRGB(0, 120, 255)   -- 藍色
+local ItemColor = Color3.fromRGB(255, 165, 0)  -- 橙色
+
+-- 小圓點顏色變量
+local DotColor = Color3.fromRGB(255, 255, 0)  -- 黃色（默認）
+local DotPosition = "頭"  -- 小圓點位置：頭、胸、腿
+
+-- ESP左側欄
+local EspLeftSection = EspTab:DrawSection({
+    Name = "基本透視",
+    Position = 'left'
+});
+
+-- ESP主開關
+local EspMainToggle = EspLeftSection:AddToggle({
+    Name = "ESP主開關",
+    Flag = "Esp_Main_Toggle",
+    Default = false,
+    Callback = function(state)
+        EspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "ESP系統已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            StartEspLoop()
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "ESP系統已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearAllEsp()
+            StopEspLoop()
+        end
+    end,
+});
+
+-- 玩家透視
+local PlayerEspToggle = EspLeftSection:AddToggle({
+    Name = "玩家透視",
+    Flag = "PlayerEsp_Toggle",
+    Default = false,
+    Callback = function(state)
+        PlayerEspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "玩家透視已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "玩家透視已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearPlayerEsp()
+        end
+    end,
+});
+
+-- 敵人透視
+local EnemyEspToggle = EspLeftSection:AddToggle({
+    Name = "敵人透視",
+    Flag = "EnemyEsp_Toggle",
+    Default = false,
+    Callback = function(state)
+        EnemyEspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "敵人透視已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "敵人透視已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearEnemyEsp()
+        end
+    end,
+});
+
+-- NPC透視
+local NpcEspToggle = EspLeftSection:AddToggle({
+    Name = "NPC透視",
+    Flag = "NpcEsp_Toggle",
+    Default = false,
+    Callback = function(state)
+        NpcEspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "NPC透視已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "NPC透視已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearNpcEsp()
+        end
+    end,
+});
+
+-- 物品透視
+local ItemEspToggle = EspLeftSection:AddToggle({
+    Name = "物品透視",
+    Flag = "ItemEsp_Toggle",
+    Default = false,
+    Callback = function(state)
+        ItemEspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "物品透視已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "物品透視已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearItemEsp()
+        end
+    end,
+});
+
+-- ESP右側欄
+local EspRightSection = EspTab:DrawSection({
+    Name = "進階透視",
+    Position = 'right'
+});
+
+-- 3D框透視
+local Box3DEspToggle = EspRightSection:AddToggle({
+    Name = "3D框透視",
+    Flag = "Box3DEsp_Toggle",
+    Default = false,
+    Callback = function(state)
+        Box3DEspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "3D框透視已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "3D框透視已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearBox3DEsp()
+        end
+    end,
+});
+
+-- 小圓點透視
+local DotEspToggle = EspRightSection:AddToggle({
+    Name = "小圓點顯示",
+    Flag = "DotEsp_Toggle",
+    Default = false,
+    Callback = function(state)
+        DotEspEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "小圓點顯示已啟用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "小圓點顯示已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            ClearDotEsp()
+        end
+    end,
+});
+
+-- 自瞄功能（自動瞄準，不需要按鍵）
+local AimbotToggle = EspRightSection:AddToggle({
+    Name = "自動瞄準",
+    Flag = "Aimbot_Toggle",
+    Default = false,
+    Callback = function(state)
+        AimbotEnabled = state
+        if state then
+            Notifier.new({
+                Title = "提示",
+                Content = "自動瞄準已啟用",
+                Duration = 3,
+                Icon = "rbxassetid://120245531583106"
+            });
+            StartAimbot()
+        else
+            Notifier.new({
+                Title = "提示",
+                Content = "自動瞄準已禁用",
+                Duration = 2,
+                Icon = "rbxassetid://120245531583106"
+            });
+            StopAimbot()
+        end
+    end,
+});
+
+-- 透視設定區域
+local EspSettingsSection = EspTab:DrawSection({
+    Name = "透視設定",
+    Position = 'left'
+});
+
+-- 透視距離設定
+local EspMaxDistance = 100
+local EspDistanceSlider = EspSettingsSection:AddSlider({
+    Name = "透視距離",
+    Min = 10,
+    Max = 500,
+    Default = 100,
+    Round = 0,
+    Flag = "Esp_Distance",
+    Callback = function(value)
+        EspMaxDistance = value
+        print("透視距離設定為: " .. value)
+    end
+});
+
+-- 透視刷新率
+local EspUpdateRate = 0.1
+local EspUpdateSlider = EspSettingsSection:AddSlider({
+    Name = "刷新率(秒)",
+    Min = 0.05,
+    Max = 1,
+    Default = 0.1,
+    Round = 2,
+    Flag = "Esp_UpdateRate",
+    Callback = function(value)
+        EspUpdateRate = value
+        print("ESP刷新率設定為: " .. value .. "秒")
+    end
+});
+
+-- 添加ESP功能說明
+EspSettingsSection:AddParagraph({
+    Title = "ESP功能說明",
+    Content = "小圓點：屏幕上顯示的彩色小圓點\n3D框：顯示玩家位置和範圍"
+});
+
+-- 小圓點設定區域
+local DotSettingsSection = EspTab:DrawSection({
+    Name = "小圓點設定",
+    Position = 'right'
+});
+
+-- 小圓點顏色
+local DotColorPicker = DotSettingsSection:AddColorPicker({
+    Name = "小圓點顏色",
+    Default = Color3.fromRGB(255, 255, 0),  -- 黃色
+    Flag = "Dot_Color",
+    Callback = function(color)
+        DotColor = color
+        print("小圓點顏色已更改")
+    end
+});
+
+-- 小圓點大小
+local DotSize = 30
+local DotSizeSlider = DotSettingsSection:AddSlider({
+    Name = "小圓點大小",
+    Min = 10,
+    Max = 80,
+    Default = 30,
+    Round = 0,
+    Flag = "Dot_Size",
+    Callback = function(value)
+        DotSize = value
+        print("小圓點大小設定為: " .. value)
+    end
+});
+
+-- 小圓點位置選擇
+local DotPositionDropdown = DotSettingsSection:AddDropdown({
+    Name = "小圓點位置",
+    Default = "頭",
+    Flag = "Dot_Position",
+    Values = {"頭", "胸", "腿"},
+    Callback = function(value)
+        DotPosition = value
+        print("小圓點位置設定為: " .. value)
+    end
+});
+
+-- 自瞄平滑度
+local AimbotSmoothness = 0.3
+local AimbotSmoothnessSlider = DotSettingsSection:AddSlider({
+    Name = "自瞄平滑度",
+    Min = 0.1,
+    Max = 1,
+    Default = 0.3,
+    Round = 1,
+    Flag = "Aimbot_Smoothness",
+    Callback = function(value)
+        AimbotSmoothness = value
+        print("自瞄平滑度設定為: " .. value)
+    end
+});
+
+-- 自瞄優先目標
+local AimbotPriority = "最近"
+local AimbotPriorityDropdown = DotSettingsSection:AddDropdown({
+    Name = "自瞄優先目標",
+    Default = "最近",
+    Flag = "Aimbot_Priority",
+    Values = {"最近", "血量最少", "威脅最高"},
+    Callback = function(value)
+        AimbotPriority = value
+        print("自瞄優先目標設定為: " .. value)
+    end
+});
+
+-- 自瞄範圍
+local AimbotRange = 100
+local AimbotRangeSlider = DotSettingsSection:AddSlider({
+    Name = "自瞄範圍",
+    Min = 10,
+    Max = 500,
+    Default = 100,
+    Round = 0,
+    Flag = "Aimbot_Range",
+    Callback = function(value)
+        AimbotRange = value
+        print("自瞄範圍設定為: " .. value)
+    end
+});
+
+-- 添加自瞄功能說明
+DotSettingsSection:AddParagraph({
+    Title = "自動瞄準說明",
+    Content = "啟用後自動瞄準小圓點位置\n小圓點在哪就瞄哪裡\n平滑度越高瞄準越慢但更穩定"
+});
+
+-- ====================================================================
+-- 基礎函數定義
+-- ====================================================================
+
+function ResetSpeed()
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = OriginalWalkSpeed
+        end
+    end
+end
+
+function ApplySpeed()
+    if not SpeedEnabled then return end
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = OriginalWalkSpeed * SpeedMultiplier
+        end
+    end
+end
+
+function ResetJump()
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = OriginalJumpPower
+        end
+    end
+end
+
+function ApplyJump()
+    if not JumpEnabled then return end
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = JumpPower
+        end
+    end
+end
+
+function ApplyFOV()
+    if not FOVEnabled and not WideAngleEnabled then
+        ResetFOV()
+        return
+    end
+    
+    local camera = game:GetService("Workspace").CurrentCamera
+    if camera then
+        if WideAngleEnabled then
+            camera.FieldOfView = WideAngleValue
+        elseif FOVEnabled then
+            camera.FieldOfView = FOVValue
+        end
+    end
+end
+
+function ResetFOV()
+    local camera = game:GetService("Workspace").CurrentCamera
+    if camera then
+        camera.FieldOfView = DefaultFOV
+    end
+end
+
+function ApplyWideAngle()
+    ApplyFOV()
+end
+
+-- ==================== ESP功能實現 ====================
+
+-- 清除所有ESP
+function ClearAllEsp()
+    for _, obj in pairs(EspObjects) do
+        if obj and obj.Parent then
+            pcall(function()
+                obj:Destroy()
+            end)
+        end
+    end
+    EspObjects = {}
+    
+    for _, dot in pairs(EspDots) do
+        if dot and dot.Parent then
+            pcall(function()
+                dot:Destroy()
+            end)
+        end
+    end
+    EspDots = {}
+    
+    -- 清除所有玩家的ESP
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            ClearCharacterEsp(player.Character)
+        end
+    end
+    
+    -- 清除工作區中的NPC和物品ESP
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("Model") then
+            ClearCharacterEsp(obj)
+        end
+    end
+end
+
+-- 清除角色ESP
+function ClearCharacterEsp(character)
+    if not character then return end
+    
+    local highlight = character:FindFirstChild("CDX_Highlight")
+    if highlight then
+        pcall(function()
+            highlight:Destroy()
+        end)
+    end
+    
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            local billboard = part:FindFirstChild("CDX_Billboard")
+            if billboard then
+                pcall(function()
+                    billboard:Destroy()
+                end)
+            end
+            
+            local box3d = part:FindFirstChild("CDX_Box3D")
+            if box3d then
+                pcall(function()
+                    box3d:Destroy()
+                end)
+            end
+        end
+    end
+end
+
+-- 清除特定ESP類型
+function ClearPlayerEsp()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            ClearCharacterEsp(player.Character)
+        end
+    end
+end
+
+function ClearEnemyEsp()
+    ClearPlayerEsp()  -- 暫時使用相同邏輯
+end
+
+function ClearNpcEsp()
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and not game.Players:GetPlayerFromCharacter(obj) then
+            ClearCharacterEsp(obj)
+        end
+    end
+end
+
+function ClearItemEsp()
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            local highlight = obj:FindFirstChild("CDX_Highlight")
+            if highlight then
+                pcall(function()
+                    highlight:Destroy()
+                end)
+            end
+        end
+    end
+end
+
+function ClearBox3DEsp()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    local box3d = part:FindFirstChild("CDX_Box3D")
+                    if box3d then
+                        pcall(function()
+                            box3d:Destroy()
+                        end)
+                    end
+                end
+            end
+        end
+    end
+end
+
+function ClearDotEsp()
+    for _, dot in pairs(EspDots) do
+        if dot and dot.Parent then
+            pcall(function()
+                dot:Destroy()
+            end)
+        end
+    end
+    EspDots = {}
+end
+
+-- 停止ESP循環
+function StopEspLoop()
+    if EspConnection then
+        EspConnection:Disconnect()
+        EspConnection = nil
+    end
+end
+
+-- 檢查是否在視野內
+function IsInViewport(position)
+    local camera = workspace.CurrentCamera
+    local screenPoint = camera:WorldToViewportPoint(position)
+    return screenPoint.Z > 0
+end
+
+-- 計算距離
+function CalculateDistance(position1, position2)
+    return (position1 - position2).Magnitude
+end
+
+-- 獲取小圓點位置（頭、胸、腿）
+function GetDotPosition(character)
+    if not character then return Vector3.new(0, 0, 0) end
+    
+    local head = character:FindFirstChild("Head")
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    local leftLeg = character:FindFirstChild("Left Leg") or character:FindFirstChild("LeftFoot")
+    local rightLeg = character:FindFirstChild("Right Leg") or character:FindFirstChild("RightFoot")
+    
+    if DotPosition == "頭" and head then
+        return head.Position
+    elseif DotPosition == "胸" and humanoidRootPart then
+        return humanoidRootPart.Position
+    elseif DotPosition == "腿" then
+        -- 計算兩腿中間位置
+        local leftLegPos = leftLeg and leftLeg.Position or Vector3.new(0, 0, 0)
+        local rightLegPos = rightLeg and rightLeg.Position or Vector3.new(0, 0, 0)
+        if leftLeg and rightLeg then
+            return (leftLegPos + rightLegPos) / 2
+        elseif humanoidRootPart then
+            return humanoidRootPart.Position - Vector3.new(0, 1.5, 0)  -- 胸部下方
+        end
+    end
+    
+    -- 默認返回頭部或胸部
+    return head and head.Position or (humanoidRootPart and humanoidRootPart.Position or Vector3.new(0, 0, 0))
+end
+
+-- ESP主循環
+function StartEspLoop()
+    -- 停止之前的循環
+    StopEspLoop()
+    
+    -- 創建新循環
+    EspConnection = game:GetService("RunService").RenderStepped:Connect(function()
+        if not EspEnabled then
+            StopEspLoop()
+            return
+        end
+        
+        -- 清除所有ESP
+        ClearAllEsp()
+        
+        -- 更新各種ESP
+        UpdatePlayerEsp()
+        UpdateEnemyEsp()
+        UpdateNpcEsp()
+        UpdateItemEsp()
+        UpdateBox3DEsp()
+        UpdateDotEsp()  -- 更新小圓點
+    end)
+end
+
+-- 更新玩家ESP
+function UpdatePlayerEsp()
+    if not PlayerEspEnabled then return end
+    
+    local localPlayer = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character then
+            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                local distance = CalculateDistance(camera.CFrame.Position, humanoidRootPart.Position)
+                if distance <= EspMaxDistance then
+                    CreateEntityHighlight(player.Character, PlayerColor, player.Name, distance)
+                end
+            end
+        end
+    end
+end
+
+-- 更新敵人ESP（與玩家相同邏輯，但不同顏色）
+function UpdateEnemyEsp()
+    if not EnemyEspEnabled then return end
+    
+    local localPlayer = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character then
+            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                local distance = CalculateDistance(camera.CFrame.Position, humanoidRootPart.Position)
+                if distance <= EspMaxDistance then
+                    CreateEntityHighlight(player.Character, EnemyColor, player.Name .. " (敵人)", distance)
+                end
+            end
+        end
+    end
+end
+
+-- 更新NPC ESP
+function UpdateNpcEsp()
+    if not NpcEspEnabled then return end
+    
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("Model") then
+            local humanoid = obj:FindFirstChild("Humanoid")
+            if humanoid and not game.Players:GetPlayerFromCharacter(obj) then
+                local primaryPart = obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                if primaryPart then
+                    local distance = CalculateDistance(game:GetService("Workspace").CurrentCamera.CFrame.Position, primaryPart.Position)
+                    if distance <= EspMaxDistance then
+                        CreateEntityHighlight(obj, NpcColor, obj.Name .. " (NPC)", distance)
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 創建實體高亮
+function CreateEntityHighlight(character, color, name, distance)
+    if not character then return end
+    
+    local camera = workspace.CurrentCamera
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Head") or character.PrimaryPart
+    
+    if not humanoidRootPart then return end
+    
+    if not IsInViewport(humanoidRootPart.Position) then return end
+    
+    -- 創建高亮效果
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "CDX_Highlight"
+    highlight.Adornee = character
+    highlight.FillColor = color
+    highlight.OutlineColor = color
+    highlight.FillTransparency = 0.8
+    highlight.OutlineTransparency = 0.2
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+    
+    table.insert(EspObjects, highlight)
+    
+    -- 創建名稱標籤
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "CDX_Billboard"
+    billboard.Adornee = humanoidRootPart
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = EspMaxDistance
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = name .. "\n距離: " .. math.floor(distance) .. " 單位"
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.TextSize = 14
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.Parent = billboard
+    
+    billboard.Parent = humanoidRootPart
+    table.insert(EspObjects, billboard)
+end
+
+-- 更新物品ESP
+function UpdateItemEsp()
+    if not ItemEspEnabled then return end
+    
+    local camera = workspace.CurrentCamera
+    
+    -- 尋找可能的物品
+    local itemNames = {"Tool", "Part", "Model", "MeshPart"}
+    
+    for _, itemName in pairs(itemNames) do
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj:IsA(itemName) then
+                -- 檢查是否是物品
+                local isItem = false
+                local itemNamesToCheck = {"Item", "Tool", "Weapon", "Sword", "Gun", "Ammo", "Health", "Coin", "Money", "Box", "Chest"}
+                
+                for _, namePart in pairs(itemNamesToCheck) do
+                    if obj.Name:lower():find(namePart:lower()) then
+                        isItem = true
+                        break
+                    end
+                end
+                
+                if isItem then
+                    local primaryPart = obj:IsA("Model") and obj.PrimaryPart or obj
+                    if primaryPart then
+                        local distance = CalculateDistance(camera.CFrame.Position, primaryPart.Position)
+                        if distance <= EspMaxDistance then
+                            local highlight = Instance.new("Highlight")
+                            highlight.Name = "CDX_Highlight"
+                            highlight.Adornee = obj
+                            highlight.FillColor = ItemColor
+                            highlight.OutlineColor = ItemColor
+                            highlight.FillTransparency = 0.7
+                            highlight.OutlineTransparency = 0.3
+                            highlight.Parent = obj
+                            
+                            table.insert(EspObjects, highlight)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 更新3D框ESP
+function UpdateBox3DEsp()
+    if not Box3DEspEnabled then return end
+    
+    local camera = workspace.CurrentCamera
+    
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character then
+            local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                local distance = CalculateDistance(camera.CFrame.Position, humanoidRootPart.Position)
+                if distance <= EspMaxDistance then
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Name = "CDX_Box3D"
+                    box.Adornee = player.Character
+                    box.AlwaysOnTop = true
+                    box.ZIndex = 10
+                    box.Size = player.Character:GetExtentsSize() * 1.1
+                    
+                    -- 根據隊伍設置顏色
+                    local localPlayer = game.Players.LocalPlayer
+                    if player.Team == localPlayer.Team then
+                        box.Color3 = PlayerColor
+                    else
+                        box.Color3 = EnemyColor
+                    end
+                    
+                    box.Transparency = 0.7
+                    box.Parent = player.Character
+                    
+                    table.insert(EspObjects, box)
+                end
+            end
+        end
+    end
+end
+
+-- 更新小圓點ESP
+function UpdateDotEsp()
+    if not DotEspEnabled then return end
+    
+    local localPlayer = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+    
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character then
+            -- 獲取小圓點位置（頭、胸、腿）
+            local dotPosition = GetDotPosition(player.Character)
+            
+            local screenPoint, onScreen = camera:WorldToViewportPoint(dotPosition)
+            local distance = CalculateDistance(camera.CFrame.Position, dotPosition)
+            
+            if distance <= EspMaxDistance then
+                if onScreen then
+                    -- 創建小圓點顯示
+                    local dotGui = Instance.new("ScreenGui")
+                    dotGui.Name = "CDX_Dot_" .. player.Name
+                    dotGui.ResetOnSpawn = false
+                    dotGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                    
+                    local dotContainer = Instance.new("Frame")
+                    dotContainer.Name = "DotContainer"
+                    dotContainer.Size = UDim2.new(0, DotSize + 60, 0, DotSize + 40)  -- 更大的容器以容納圓點和距離
+                    dotContainer.Position = UDim2.new(0, screenPoint.X - (DotSize + 60)/2, 0, screenPoint.Y - (DotSize + 40)/2)
+                    dotContainer.BackgroundTransparency = 1
+                    
+                    -- 創建小圓點
+                    local dotFrame = Instance.new("Frame")
+                    dotFrame.Name = "DotFrame"
+                    dotFrame.Size = UDim2.new(0, DotSize, 0, DotSize)
+                    dotFrame.Position = UDim2.new(0.5, -DotSize/2, 0, 0)  -- 置中
+                    dotFrame.BackgroundTransparency = 0.3
+                    dotFrame.BackgroundColor3 = DotColor
+                    dotFrame.BorderSizePixel = 0
+                    
+                    -- 添加圓角
+                    local UICorner = Instance.new("UICorner")
+                    UICorner.CornerRadius = UDim.new(1, 0)
+                    UICorner.Parent = dotFrame
+                    
+                    -- 添加外框
+                    local UIStroke = Instance.new("UIStroke")
+                    UIStroke.Color = DotColor
+                    UIStroke.Thickness = 2
+                    UIStroke.Parent = dotFrame
+                    
+                    dotFrame.Parent = dotContainer
+                    
+                    -- 添加距離文本（在圓點下方）
+                    local distanceText = Instance.new("TextLabel")
+                    distanceText.Name = "DistanceText"
+                    distanceText.Size = UDim2.new(1, 0, 0, 20)
+                    distanceText.Position = UDim2.new(0, 0, 1, 0)
+                    distanceText.BackgroundTransparency = 1
+                    distanceText.Text = math.floor(distance) .. "m"
+                    distanceText.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    distanceText.TextSize = 12
+                    distanceText.Font = Enum.Font.GothamBold
+                    distanceText.TextStrokeTransparency = 0
+                    distanceText.TextStrokeColor3 = Color3.new(0, 0, 0)
+                    distanceText.TextXAlignment = Enum.TextXAlignment.Center
+                    distanceText.Parent = dotContainer
+                    
+                    -- 添加位置標識文本（在圓點上方）
+                    local positionText = Instance.new("TextLabel")
+                    positionText.Name = "PositionText"
+                    positionText.Size = UDim2.new(1, 0, 0, 15)
+                    positionText.Position = UDim2.new(0, 0, 0, -15)
+                    positionText.BackgroundTransparency = 1
+                    positionText.Text = DotPosition
+                    positionText.TextColor3 = DotColor
+                    positionText.TextSize = 11
+                    positionText.Font = Enum.Font.Gotham
+                    positionText.TextStrokeTransparency = 0.5
+                    positionText.TextStrokeColor3 = Color3.new(0, 0, 0)
+                    positionText.TextXAlignment = Enum.TextXAlignment.Center
+                    positionText.Parent = dotContainer
+                    
+                    -- 添加玩家名稱文本（在位置上方）
+                    local nameText = Instance.new("TextLabel")
+                    nameText.Name = "NameText"
+                    nameText.Size = UDim2.new(1, 0, 0, 15)
+                    nameText.Position = UDim2.new(0, 0, 0, -30)
+                    nameText.BackgroundTransparency = 1
+                    nameText.Text = player.Name
+                    nameText.TextColor3 = player.Team == localPlayer.Team and PlayerColor or EnemyColor
+                    nameText.TextSize = 11
+                    nameText.Font = Enum.Font.Gotham
+                    nameText.TextStrokeTransparency = 0.5
+                    nameText.TextStrokeColor3 = Color3.new(0, 0, 0)
+                    nameText.TextXAlignment = Enum.TextXAlignment.Center
+                    nameText.Parent = dotContainer
+                    
+                    dotContainer.Parent = dotGui
+                    dotGui.Parent = game:GetService("CoreGui")
+                    
+                    table.insert(EspDots, dotGui)
+                end
+            end
+        end
+    end
+end
+
+-- ==================== 自瞄功能實現（自動瞄準，不需要按鍵） ====================
+
+local AimbotConnection = nil
+local CurrentTarget = nil
+local AimbotIndicator = nil
+
+-- 獲取自瞄目標
+function GetAimbotTarget()
+    local localPlayer = game.Players.LocalPlayer
+    local localCharacter = localPlayer.Character
+    if not localCharacter then return nil end
+    
+    local camera = workspace.CurrentCamera
+    local players = game.Players:GetPlayers()
+    local bestTarget = nil
+    local bestScore = math.huge
+    
+    for _, player in pairs(players) do
+        if player ~= localPlayer and player.Character then
+            local character = player.Character
+            local dotPosition = GetDotPosition(character)
+            local distance = CalculateDistance(camera.CFrame.Position, dotPosition)
+            
+            -- 檢查是否在自瞄範圍內
+            if distance <= AimbotRange then
+                local screenPoint, onScreen = camera:WorldToViewportPoint(dotPosition)
+                
+                if onScreen then
+                    local score = 0
+                    
+                    -- 根據優先目標計算分數
+                    if AimbotPriority == "最近" then
+                        score = distance
+                    elseif AimbotPriority == "血量最少" then
+                        local humanoid = character:FindFirstChild("Humanoid")
+                        local health = humanoid and humanoid.Health or 100
+                        score = health  -- 血量越少分數越低
+                    elseif AimbotPriority == "威脅最高" then
+                        -- 威脅計算：距離越近，血量越少，威脅越高
+                        local humanoid = character:FindFirstChild("Humanoid")
+                        local health = humanoid and humanoid.Health or 100
+                        score = distance * (health / 100)  -- 綜合分數
+                    end
+                    
+                    if score < bestScore then
+                        bestScore = score
+                        bestTarget = {
+                            Player = player,
+                            Character = character,
+                            Position = dotPosition,
+                            ScreenPoint = screenPoint,
+                            Distance = distance
+                        }
+                    end
+                end
+            end
+        end
+    end
+    
+    return bestTarget
+end
+
+-- 計算瞄準方向
+function CalculateAimDirection(targetPosition)
+    local camera = workspace.CurrentCamera
+    local cameraPosition = camera.CFrame.Position
+    local direction = (targetPosition - cameraPosition).Unit
+    
+    return direction
+end
+
+-- 平滑瞄準
+function SmoothAim(targetPosition)
+    local camera = workspace.CurrentCamera
+    local currentCFrame = camera.CFrame
+    local targetCFrame = CFrame.new(camera.CFrame.Position, targetPosition)
+    
+    -- 計算平滑過渡
+    local smoothCFrame = currentCFrame:Lerp(targetCFrame, AimbotSmoothness)
+    return smoothCFrame
+end
+
+-- 顯示瞄準指示器
+function ShowAimbotIndicator(target)
+    if not target then
+        if AimbotIndicator then
+            AimbotIndicator:Destroy()
+            AimbotIndicator = nil
+        end
+        return
+    end
+    
+    if not AimbotIndicator then
+        AimbotIndicator = Instance.new("ScreenGui")
+        AimbotIndicator.Name = "CDX_AimbotIndicator"
+        AimbotIndicator.ResetOnSpawn = false
+        AimbotIndicator.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        
+        local indicatorFrame = Instance.new("Frame")
+        indicatorFrame.Name = "IndicatorFrame"
+        indicatorFrame.Size = UDim2.new(0, 20, 0, 20)
+        indicatorFrame.Position = UDim2.new(0.5, -10, 0.5, -10)
+        indicatorFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        indicatorFrame.BackgroundTransparency = 0.3
+        indicatorFrame.BorderSizePixel = 0
+        
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(1, 0)
+        UICorner.Parent = indicatorFrame
+        
+        -- 添加目標信息文本
+        local infoText = Instance.new("TextLabel")
+        infoText.Name = "InfoText"
+        infoText.Size = UDim2.new(0, 200, 0, 30)
+        infoText.Position = UDim2.new(0.5, -100, 0.5, 30)
+        infoText.BackgroundTransparency = 1
+        infoText.Text = "鎖定目標: " .. target.Player.Name .. "\n距離: " .. math.floor(target.Distance) .. "m"
+        infoText.TextColor3 = Color3.fromRGB(255, 0, 0)
+        infoText.TextSize = 14
+        infoText.Font = Enum.Font.GothamBold
+        infoText.TextStrokeTransparency = 0.5
+        infoText.TextStrokeColor3 = Color3.new(0, 0, 0)
+        infoText.TextXAlignment = Enum.TextXAlignment.Center
+        infoText.Parent = indicatorFrame
+        
+        indicatorFrame.Parent = AimbotIndicator
+        AimbotIndicator.Parent = game:GetService("CoreGui")
+    else
+        -- 更新指示器信息
+        local indicatorFrame = AimbotIndicator:FindFirstChild("IndicatorFrame")
+        if indicatorFrame then
+            local infoText = indicatorFrame:FindFirstChild("InfoText")
+            if infoText then
+                infoText.Text = "鎖定目標: " .. target.Player.Name .. "\n距離: " .. math.floor(target.Distance) .. "m"
+            end
+        end
+    end
+end
+
+-- 開始自瞄（自動瞄準，不需要按鍵）
+function StartAimbot()
+    if AimbotConnection then return end
+    
+    AimbotConnection = game:GetService("RunService").RenderStepped:Connect(function()
+        if not AimbotEnabled then
+            StopAimbot()
+            return
+        end
+        
+        -- 獲取自瞄目標
+        local target = GetAimbotTarget()
+        
+        if target then
+            CurrentTarget = target
+            
+            -- 顯示瞄準指示器
+            ShowAimbotIndicator(target)
+            
+            -- 計算瞄準方向
+            local aimDirection = CalculateAimDirection(target.Position)
+            
+            -- 應用平滑瞄準
+            local smoothCFrame = SmoothAim(target.Position)
+            
+            -- 設置相機朝向（自動瞄準）
+            workspace.CurrentCamera.CFrame = smoothCFrame
+        else
+            CurrentTarget = nil
+            -- 隱藏瞄準指示器
+            ShowAimbotIndicator(nil)
+        end
+    end)
+end
+
+-- 停止自瞄
+function StopAimbot()
+    if AimbotConnection then
+        AimbotConnection:Disconnect()
+        AimbotConnection = nil
+    end
+    
+    CurrentTarget = nil
+    
+    -- 隱藏瞄準指示器
+    ShowAimbotIndicator(nil)
+end
+
+-- ==================== 保存和加載設置 ====================
+
+function SaveSettings()
+    local settings = {
+        -- 通用設置
+        SpeedEnabled = SpeedEnabled,
+        SpeedMultiplier = SpeedMultiplier,
+        JumpEnabled = JumpEnabled,
+        JumpPower = JumpPower,
+        FOVEnabled = FOVEnabled,
+        FOVValue = FOVValue,
+        WideAngleEnabled = WideAngleEnabled,
+        WideAngleValue = WideAngleValue,
+        
+        -- ESP設置
+        EspEnabled = EspEnabled,
+        PlayerEspEnabled = PlayerEspEnabled,
+        EnemyEspEnabled = EnemyEspEnabled,
+        NpcEspEnabled = NpcEspEnabled,
+        ItemEspEnabled = ItemEspEnabled,
+        Box3DEspEnabled = Box3DEspEnabled,
+        DotEspEnabled = DotEspEnabled,
+        AimbotEnabled = AimbotEnabled,
+        EspMaxDistance = EspMaxDistance,
+        EspUpdateRate = EspUpdateRate,
+        DotColor = DotColor,
+        DotSize = DotSize,
+        DotPosition = DotPosition,
+        AimbotSmoothness = AimbotSmoothness,
+        AimbotPriority = AimbotPriority,
+        AimbotRange = AimbotRange
+    }
+    
+    ConfigManager:SaveConfig("CDX_Settings", settings)
+    print("設置已保存")
+end
+
+function LoadSettings()
+    local settings = ConfigManager:LoadConfig("CDX_Settings")
+    if settings then
+        -- 加載通用設置
+        SpeedToggle:SetState(settings.SpeedEnabled or false)
+        SpeedSlider:SetValue(settings.SpeedMultiplier or 2)
+        JumpToggle:SetState(settings.JumpEnabled or false)
+        JumpSlider:SetValue(settings.JumpPower or 50)
+        FOVToggle:SetState(settings.FOVEnabled or false)
+        FOVSlider:SetValue(settings.FOVValue or 70)
+        WideAngleToggle:SetState(settings.WideAngleEnabled or false)
+        WideAngleSlider:SetValue(settings.WideAngleValue or 90)
+        
+        -- 加載ESP設置
+        EspMainToggle:SetState(settings.EspEnabled or false)
+        PlayerEspToggle:SetState(settings.PlayerEspEnabled or false)
+        EnemyEspToggle:SetState(settings.EnemyEspEnabled or false)
+        NpcEspToggle:SetState(settings.NpcEspEnabled or false)
+        ItemEspToggle:SetState(settings.ItemEspEnabled or false)
+        Box3DEspToggle:SetState(settings.Box3DEspEnabled or false)
+        DotEspToggle:SetState(settings.DotEspEnabled or false)
+        AimbotToggle:SetState(settings.AimbotEnabled or false)
+        EspDistanceSlider:SetValue(settings.EspMaxDistance or 100)
+        EspUpdateSlider:SetValue(settings.EspUpdateRate or 0.1)
+        DotColorPicker:SetValue(settings.DotColor or Color3.fromRGB(255, 255, 0))
+        DotSizeSlider:SetValue(settings.DotSize or 30)
+        DotPositionDropdown:SetValue(settings.DotPosition or "頭")
+        AimbotSmoothnessSlider:SetValue(settings.AimbotSmoothness or 0.3)
+        AimbotPriorityDropdown:SetValue(settings.AimbotPriority or "最近")
+        AimbotRangeSlider:SetValue(settings.AimbotRange or 100)
+        
+        print("設置已加載")
+    end
+end
+
+-- ==================== 主循環和初始化 ====================
+
+-- 通用功能循環
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        ApplySpeed()
+        ApplyJump()
+        ApplyFOV()
+    end
+end)
+
+-- 角色重生時監聽
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    wait(1)
+    -- 重置原始值
+    if character:FindFirstChild("Humanoid") then
+        OriginalWalkSpeed = character.Humanoid.WalkSpeed
+        OriginalJumpPower = character.Humanoid.JumpPower
+    end
+    
+    -- 重新應用設定
+    ApplySpeed()
+    ApplyJump()
+end)
+
+-- 初始化時獲取原始值
+task.wait(2)
+local player = game.Players.LocalPlayer
+if player and player.Character then
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        OriginalWalkSpeed = humanoid.WalkSpeed
+        OriginalJumpPower = humanoid.JumpPower
+    end
+end
+
+-- 獲取默認FOV
+local camera = game:GetService("Workspace").CurrentCamera
+if camera then
+    DefaultFOV = camera.FieldOfView or 70
+    OriginalFOV = DefaultFOV
+end
+
+-- 加載保存的設置
+task.spawn(function()
+    task.wait(3)
+    LoadSettings()
+end)
+
+-- 遊戲關閉時保存設置
+game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui").ChildRemoved:Connect(function()
+    SaveSettings()
+end)
+
+print("========================================")
+print("CDX Universal UI framework initialized!")
+print("Device: " .. deviceType)
+print("Features: ESP透视 + 玩家修改 + 数字显示 + 自动瞄准")
+print("ESP: 小圆点 + 3D框")
+print("小圆点: 可调颜色 + 位置选择 + 距离显示")
+print("自动瞄准: 启用后自动瞄准小圆点位置")
+print("Press LeftAlt to open interface")
+print("========================================")
